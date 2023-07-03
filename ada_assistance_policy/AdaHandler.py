@@ -23,60 +23,58 @@ import openravepy
 import adapy
 import prpy
 
-from ada_teleoperation.AdaTeleopHandler import AdaTeleopHandler, Is_Done_Func_Button_Hold
-from ada_teleoperation.RobotState import *
+#from ada_teleoperation.AdaTeleopHandler import AdaTeleopHandler, Is_Done_Func_Button_Hold
+from teleop_comms_Test import readState
+#from ada_teleoperation.RobotState import *
 
 
 
-SIMULATE_DEFAULT = False
-#SIMULATE_VELOCITY_MOVEJOINT = False  #NOTE if true, SIMULATE should also be true
-#FLOATING_HAND_ONLY = False
+# SIMULATE_DEFAULT = False
+# #SIMULATE_VELOCITY_MOVEJOINT = False  #NOTE if true, SIMULATE should also be true
+# #FLOATING_HAND_ONLY = False
 
-RESAVE_GRASP_POSES = True
-cached_data_dir = 'cached_data'
+# RESAVE_GRASP_POSES = True
+# cached_data_dir = 'cached_data'
 
-CONTROL_HZ = 40.
+# CONTROL_HZ = 40.
 
 num_control_modes = 2
 
 
-#def Is_Done_Func_Button_Hold(env, robot, user_input):
-  #return user_input.buttons_held[0]
-  #if user_input.
-
-
   
 class AdaHandler:
-  def __init__(self, env, robot, goals, goal_objects, input_interface_name, num_input_dofs, use_finger_mode=True, goal_object_poses=None):
+  def __init__(self, env, goals, goal_objects, goal_object_poses=None):
 #      self.params = {'rand_start_radius':0.04,
 #             'noise_pwr': 0.3,  # magnitude of noise
 #             'vel_scale': 4.,   # scaling when sending velocity commands to robot
 #             'max_alpha': 0.6}  # maximum blending alpha value blended robot policy 
 
       self.env = env
-      self.robot = robot
+      #self.robot = robot
       self.goals = goals
+      self.PORT_robot = 8080
       self.goal_objects = goal_objects
       if not goal_object_poses and goal_objects:
-        self.goal_object_poses = [goal_obj.GetTransform() for goal_obj in goal_objects]
+        self.goal_object_poses = [goal_obj.get_orientation() for goal_obj in goal_objects]
       else:
         self.goal_object_poses = goal_object_poses
 
-      self.sim = robot.simulated
-      self.manip = self.robot.arm
+      self.sim = env.panda
+      #self.manip = self.robot.arm
     
-      self.ada_teleop = AdaTeleopHandler(env, robot, input_interface_name, num_input_dofs, use_finger_mode)#, is_done_func=Teleop_Done)
-      self.robot_state = self.ada_teleop.robot_state
+      #self.ada_teleop = AdaTeleopHandler(env, robot, input_interface_name, num_input_dofs, use_finger_mode)#, is_done_func=Teleop_Done)
+
+      self.robot_state = readState(self.PORT_robot)
 
       self.robot_policy = AdaAssistancePolicy(self.goals)
 
-      self.user_input_mapper = self.ada_teleop.user_input_mapper
+      #self.user_input_mapper = self.ada_teleop.user_input_mapper
 
-  def GetEndEffectorTransform(self):
-#    if FLOATING_HAND_ONLY:
-#      return self.floating_hand.GetTransform()
-#    else:
-      return self.manip.GetEndEffectorTransform()
+#   def GetEndEffectorTransform(self):
+# #    if FLOATING_HAND_ONLY:
+# #      return self.floating_hand.GetTransform()
+# #    else:
+#       return self.manip.GetEndEffectorTransform()
 
 
   #def Get_Robot_Policy_Action(self, goal_distribution):
@@ -89,7 +87,7 @@ class AdaHandler:
         self.user_bot = UserBot(self.goals)
         self.user_bot.set_user_goal(0)
       
-      vis = vistools.VisualizationHandler()
+      #vis = vistools.VisualizationHandler()
 
       robot_state = self.robot_state
       robot_state.ee_trans = self.GetEndEffectorTransform()

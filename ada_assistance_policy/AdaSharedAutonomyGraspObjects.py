@@ -14,7 +14,7 @@ import numpy as np
 from functools import partial
 
 
-import openravepy
+
 #import adapy
 from env import SimpleEnv
 import prpy
@@ -24,28 +24,6 @@ VIEWER_DEFAULT = 'InteractiveMarker'
 
 #def Initialize_Adapy(args, env_path='/environments/tablewithobjects_assisttest.env.xml'):
 def Initialize_Adapy():
-    """ Initializes robot and environment through adapy, using the specified environment path
-
-    @param env_path path to OpenRAVE environment
-    @return environment, robot
-    """
-    #env_path = '/environments/tablewithobjects_assisttest.env.xml'
-    # adapy_args = {'sim':args.sim,
-    #               'attach_viewer':args.viewer,
-    #               'env_path':env_path
-    #               }
-    # openravepy.RaveInitialize(True, level=openravepy.DebugLevel.Debug)
-    #openravepy.misc.InitOpenRAVELogging();
-    # def Init_Robot(robot):
-#     robot.SetActiveDOFs(range(6))
-#     #self.robot.arm.hand.OpenHand()
-#     #if (self.sim):
-#     robot_pose = np.array([[1, 0, 0, 0.409],[0, 1, 0, 0.338],[0, 0, 1, 0.795],[0, 0, 0, 1]])
-#     robot.SetTransform(robot_pose)
-#     if (robot.simulated):
-#       #servo simulator params
-#       robot.arm.servo_simulator.period=1./200.
-    #env, robot = adapy.initialize(**adapy_args)
     env = SimpleEnv(visualize=False)
     #Init_Robot(robot)
     return env
@@ -70,19 +48,13 @@ def Init_Goals(env, robot, randomize_goal_init=False):
     #env.block_quaternion = [0, 0, 0, 1]
     #goal_objects.append(env.GetKinBody('fuze_bottle'))
     
-
     if randomize_goal_init:
       env.block_position += np.random.rand(3)*0.10 - 0.05
       env.reset_box()
-    
-
-   
-
     # if randomize_goal_init:
     #   obj_pose[0:3,3] += np.random.rand(3)*0.10 - 0.05
     # goal_objects[1].SetTransform(obj_pose)
     # obj_pose= robot.GetTransform()
-
     # #disable collisions for IK
     # for obj in goal_objects:
     #   obj.Enable(False)
@@ -96,42 +68,19 @@ def Init_Goals(env, robot, randomize_goal_init=False):
 
 
 def Set_Goals_From_Objects(env,goal_objects):
-  #construct filename where data might be
-#    path_to_pkg = rospkg.RosPack().get_path('ada_assistance_policy')
-#    filename = path_to_pkg + "/" + cached_data_dir + "/"
-#    for obj in goal_objects:
-#      filename += str(obj.GetName())
-#      str_pos = str(obj.GetTransform()[0:3, -1])[2:-2]
-#      str_pos = str_pos.replace(" ","")
-#      str_pos = str_pos.replace(".","")
-#      filename += str_pos
-#    filename += '.pckl'
-#
-#    #see if cached, if not load and save
-#    if os.path.isfile(filename) and not RESAVE_GRASP_POSES:
-#      with open(filename, 'r') as file:
-#        items = pickle.load(file)
-#        goals = items['goals']
+
 #    else:
   goals = []
   for obj in goal_objects:
     goals.append(goal_from_object(env,obj))
-#      with open(filename, 'w') as file:
-#        items = {}
-#        items['goals'] = goals
-#        pickle.dump(items, file)
+
 
   return goals
 
 def goal_from_object(env,object):
   #pose = object.GetTransform()
   #robot = manip.GetRobot()
-  
 
-  #generate TSRs for object
-  
-
-  #turn TSR into poses
   num_poses_desired = 30
   max_num_poses_sample = 500
 
@@ -220,12 +169,6 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   rospy.init_node('ada_assistance_policy', anonymous = True)
-
-
-  ##find environment path
-  #path_to_pkg = rospkg.RosPack().get_path('ada_assistance_policy')
-  # env_path = os.path.join(path_to_pkg, 'data', 'environments', 'tablewithobjects_assisttest.env.xml')
-
   
   env = Initialize_Adapy()
     #env,robot = Initialize_Adapy(args, env_path=env_path)
@@ -235,7 +178,7 @@ if __name__ == "__main__":
   for i in range(1):
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
-    ada_handler = AdaHandler(env, robot, goals, goal_objects, args.input_interface_name, args.num_input_dofs, use_finger_mode=False)
+    ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
     ada_handler.execute_policy(simulate_user=False, direct_teleop_only=False, fix_magnitude_user_command=False, finish_trial_func=finish_trial_func_withrobot)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 

@@ -38,6 +38,7 @@ class SimpleEnv():
         self.block.load()
         self.block_position = [0.5, 0.4, 0.2]
         self.block_quaternion = [0, 0, 0, 1]
+        
         self.block.set_position_orientation(self.block_position, self.block_quaternion)
 
         # load a panda robot
