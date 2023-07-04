@@ -1,10 +1,12 @@
 #Handles converting openrave items to generic assistance policy
 from Goal import *
 import GoalPredictor as GoalPredictor
-from ada_teleoperation.RobotState import Action
+#from ada_teleoperation.RobotState import Action
+from teleop_comms_Test import *
 from AssistancePolicy import *
 from OpenraveUtils import *
 import math
+import numpy as np
 import time
 
 ADD_MORE_IK_SOLS = False
@@ -71,71 +73,21 @@ def blend_confidence_function_euclidean_distance(robot_state, goal, distance_thr
   dist_to_nearest_goal = np.min(goal_pose_distances)
   return dist_to_nearest_goal < distance_thresh
 
-#generic functions
-def goal_from_object(object, manip):
-  pose = object.GetTransform()
-  robot = manip.GetRobot()
-  env = robot.GetEnv()
+def goal_from_object(env,object):
+  #pose = object.GetTransform()
+  #robot = manip.GetRobot()
 
-  #generate TSRs for object
-  if not 'bowl' in object.GetName():
-    target_tsrs = GetTSRListForObject(object, manip)
-
-  #turn TSR into poses
   num_poses_desired = 30
   max_num_poses_sample = 500
 
   target_poses = []
   target_iks = []
   num_sampled = 0
-  while len(target_poses) < num_poses_desired and num_sampled < max_num_poses_sample:
-    print( 'name: ' + object.GetName() + ' currently has ' + str(len(target_poses)) + ' goal poses')
-    if not 'bowl' in object.GetName():
-      num_sample_this = int(math.ceil(num_poses_desired/len(target_tsrs)))
-      num_sampled += num_sample_this
-      target_poses_idenframe = SampleTSRList(target_tsrs, num_sample_this)
-      target_poses_tocheck = [np.dot(object.GetTransform(), pose) for pose in target_poses_idenframe]
-    else:
-      num_sample_this = num_poses_desired
-      num_sampled += num_sample_this
-      target_poses_tocheck = get_bowl_poses(object, num_samples_pose=num_sample_this, ee_offset=0.15)
-    for pose in target_poses_tocheck:
-      #check if solution exists
-#      ik_sols = manip.FindIKSolutions(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-#      if len(ik_sols) > 0:
-
-      
-      #sample some random joint vals
-      
-#      lower, upper = robot.GetDOFLimits()
-#      dof_vals_before = robot.GetActiveDOFValues()
-#      dof_vals = [ np.random.uniform(lower[i], upper[i]) for i in range(6)]
-#      robot.SetActiveDOFValues(dof_vals)
-#      pose = manip.GetEndEffectorTransform()
-#      robot.SetActiveDOFValues(dof_vals_before)
-
-      ik_sol = manip.FindIKSolution(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-      if ik_sol is not None:
-        if ADD_MORE_IK_SOLS:
-          #get bigger list of ik solutions
-          ik_sols = manip.FindIKSolutions(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-          if ik_sols is None:
-            ik_sols = list()
-          else:
-            ik_sols = list(ik_sols)
-          #add the solution we found before
-          ik_sols.append(ik_sol)
-        else:
-          #if we don't want to add more, just use the one we found
-          ik_sols = [ik_sol]
-        #check env col
-        target_poses.append(pose)
-        target_iks.append(ik_sols)
-#        with robot:
-#          manip.SetDOFValues(ik_sol)
-#          if not env.CheckCollision(robot):
-#            target_poses.append(pose)
-        if len(target_poses) >= num_poses_desired:
-          break
-
+  manip = env.panda
+  obj_pos = object.get_position()
+  pose = object.get_orientation()
+  ik_sol = manip._inverse_kinematics(obj_pos, dquaternion=[0]*4)
+  target_poses.append(pose)
+  target_iks.append(ik_sol)
   return Goal(pose, target_poses, target_iks)
+

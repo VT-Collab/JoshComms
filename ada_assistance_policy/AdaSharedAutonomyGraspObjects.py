@@ -10,7 +10,7 @@ import rospkg
 import IPython
 
 import numpy as np
-
+import Goal
 from functools import partial
 
 
@@ -87,49 +87,12 @@ def goal_from_object(env,object):
   target_poses = []
   target_iks = []
   num_sampled = 0
-
+  manip = env.panda
   obj_pos = object.get_position()
   pose = object.get_orientation()
-  while len(target_poses) < num_poses_desired and num_sampled < max_num_poses_sample:
-    for pose in target_poses_tocheck:
-      #check if solution exists
-#      ik_sols = manip.FindIKSolutions(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-#      if len(ik_sols) > 0:
-
-      
-      #sample some random joint vals
-      
-#      lower, upper = robot.GetDOFLimits()
-#      dof_vals_before = robot.GetActiveDOFValues()
-#      dof_vals = [ np.random.uniform(lower[i], upper[i]) for i in range(6)]
-#      robot.SetActiveDOFValues(dof_vals)
-#      pose = manip.GetEndEffectorTransform()
-#      robot.SetActiveDOFValues(dof_vals_before)
-
-      ik_sol = manip.FindIKSolution(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-      if ik_sol is not None:
-        if ADD_MORE_IK_SOLS:
-          #get bigger list of ik solutions
-          ik_sols = manip.FindIKSolutions(pose, openravepy.IkFilterOptions.CheckEnvCollisions)
-          if ik_sols is None:
-            ik_sols = list()
-          else:
-            ik_sols = list(ik_sols)
-          #add the solution we found before
-          ik_sols.append(ik_sol)
-        else:
-          #if we don't want to add more, just use the one we found
-          ik_sols = [ik_sol]
-        #check env col
-        target_poses.append(pose)
-        target_iks.append(ik_sols)
-#        with robot:
-#          manip.SetDOFValues(ik_sol)
-#          if not env.CheckCollision(robot):
-#            target_poses.append(pose)
-        if len(target_poses) >= num_poses_desired:
-          break
-
+  ik_sol = manip._inverse_kinematics(obj_pos, dquaternion=[0]*4)
+  target_poses.append(pose)
+  target_iks.append(ik_sol)
   return Goal(pose, target_poses, target_iks)
 
 
