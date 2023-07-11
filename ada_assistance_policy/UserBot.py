@@ -6,6 +6,7 @@ class UserBot:
     def __init__(self, goals):
         self.goals = goals
         self.goal_num = 0
+        
 
         # scaling factors for generating commands
         self.position_scale_vector = 10.
@@ -21,10 +22,10 @@ class UserBot:
 #                    'exceeds max goal number', num_goals-1)
         self.goal_num = goal_num  
 
-    def get_usr_cmd(self, end_effector_trans, goal_pose=None):
-        if goal_pose is None:
-            goal_pose = self.goals[self.goal_num].pose
-        pos_diff =  self.position_scale_vector*(goal_pose[0:3,3] - end_effector_trans[0:3,3])
+    def get_usr_cmd(self, end_effector_pos, goal_pos=None):
+        if goal_pos is None:
+            goal_pos = self.goals[self.goal_num].pos
+        pos_diff =  self.position_scale_vector*(goal_pos - end_effector_pos)
 
         pos_diff_norm = np.linalg.norm(pos_diff)
 
@@ -43,9 +44,9 @@ class UserBot:
 
     def reset_noise_filter(self, noise_pwr=0.3, hist_size=50):
         correl_coeff = np.arange(hist_size, 0, -1) # creates vector [10, 9, 8, ... 1]
-        self.correl_coeff = (correl_coeff / np.sum(correl_coeff))*noise_pwr;
+        self.correl_coeff = (correl_coeff / np.sum(correl_coeff))*noise_pwr
         self.white_noise_hist = noise_pwr*self.clip_norm_val\
-                * np.random.randn(hist_size, self.usr_cmd_dim);
+                * np.random.randn(hist_size, self.usr_cmd_dim)
         self.noise_pwr = noise_pwr
         self.hist_size = hist_size
 

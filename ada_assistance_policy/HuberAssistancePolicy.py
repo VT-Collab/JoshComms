@@ -1,32 +1,92 @@
 import numpy as np
 import IPython
 import AssistancePolicyOneTarget
-import tf.transformations as transmethods
+import tf as transmethods
 from Utils import *
 
 
 ACTION_DIMENSION = 6
 
 class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget):
-  def __init__(self, pose):
-    super(HuberAssistancePolicy, self).__init__(pose)
-    self.set_constants(self.TRANSLATION_LINEAR_MULTIPLIER, self.TRANSLATION_DELTA_SWITCH, self.TRANSLATION_CONSTANT_ADD, self.ROTATION_LINEAR_MULTIPLIER, self.ROTATION_DELTA_SWITCH, self.ROTATION_CONSTANT_ADD, self.ROTATION_MULTIPLIER)
+  def __init__(self, goal):
+    super(HuberAssistancePolicy, self).__init__(goal)
+    self.set_constants(self.TRANSLATION_LINEAR_MULTIPLIER, self.TRANSLATION_DELTA_SWITCH, self.TRANSLATION_CONSTANT_ADD, self.ROTATION_LINEAR_MULTIPLIER,
+                        self.ROTATION_DELTA_SWITCH, self.ROTATION_CONSTANT_ADD, self.ROTATION_MULTIPLIER)
 
   def update(self, robot_state, user_action):
     super(HuberAssistancePolicy, self).update(robot_state, user_action)
-    self.dist_translation = np.linalg.norm(robot_state.ee_trans[0:3,3] - self.goal_pos)
-    self.dist_translation_aftertrans = np.linalg.norm(self.robot_state_after_action.ee_trans[0:3,3] - self.goal_pos)
 
-    self.quat_curr = transmethods.quaternion_from_matrix(robot_state.ee_trans)
-    self.quat_after_trans = transmethods.quaternion_from_matrix(self.robot_state_after_action.ee_trans)
+    self.position_after_action,self.pose_after_action = joint2pose(self.robot_state_after_action)
+    self.robot_position,self.robot_pose = joint2pose(self.robot_state["q"])
+    
+    self.dist_translation = np.linalg.norm(self.robot_position - self.goal_pos)
+    self.dist_translation_aftertrans = np.linalg.norm(self.position_after_action - self.goal_pos)
+
+    self.quat_curr = transmethods.quaternion_from_matrix(self.robot_pose)
+    self.quat_after_trans = transmethods.quaternion_from_matrix(self.pose_after_action)
 
     self.dist_rotation = QuaternionDistance(self.quat_curr, self.goal_quat)
     self.dist_rotation_aftertrans = QuaternionDistance(self.quat_after_trans, self.goal_quat)
-
+    
     #something about mode switch distance???
 
   def get_action(self):
-    return -self.get_q_derivative()
+    q_rot = self.get_qderivative_rotation()
+    q_trans = self.get_qderivative_translation()
+    return -(np.append(q_trans, q_rot))
+  
+  def get_qderivative_translation(self):
+    translation_diff = self.robot_position - self.goal_pos
+    dist_to_go = np.linalg.norm(translation_diff)
+    
+    if dist_to_go > self.TRANSLATION_DELTA_SWITCH:
+      translation_derivative = self.TRANSLATION_LINEAR_COST_MULT_TOTAL*(translation_diff/dist_to_go)
+    else:
+      translation_derivative = self.TRANSLATION_CONSTANT_ADD*(translation_diff/dist_to_go)
+      translation_derivative += self.TRANSLATION_QUADRATIC_COST_MULTPLIER*translation_diff
+
+    #hacky part to make it not jumpy
+    dist_translation_limit = 2e-2
+    if (dist_to_go < dist_translation_limit):
+      translation_derivative *= dist_to_go/dist_translation_limit
+
+    return translation_derivative / self.ROBOT_TRANSLATION_COST_MULTIPLIER  #[1,3]
+  
+  def get_qderivative_rotation(self):
+    quat_between = transmethods.quaternion_multiply(self.goal_quat, transmethods.quaternion_inverse(self.quat_after_trans))
+
+    rotation_derivative = quat_between[0:-1]
+    rotation_derivative /= np.linalg.norm(rotation_derivative)
+
+    if self.dist_rotation_aftertrans > self.ROTATION_DELTA_SWITCH:
+      rotation_derivative_magnitude = self.ROTATION_LINEAR_COST_MULT_TOTAL
+    else:
+      rotation_derivative_magnitude = self.ROTATION_CONSTANT_ADD
+      rotation_derivative_magnitude += self.ROTATION_QUADRATIC_COST_MULTPLIER*self.dist_rotation_aftertrans
+
+    rotation_derivative *= self.ROTATION_MULTIPLIER * rotation_derivative_magnitude / self.ROBOT_ROTATION_COST_MULTIPLIER
+
+    if (np.sum(self.goal_quat * self.quat_after_trans)) > 0:
+      rotation_derivative *= -1
+    #hacky part to make it not jumpy
+    dist_rotation_limit = np.pi/12.
+    #print 'dist rotation: ' + str(self.dist_rotation_aftertrans)
+    if (self.dist_rotation_aftertrans < dist_rotation_limit):
+      rotation_derivative *= self.dist_rotation_aftertrans/dist_rotation_limit
+    return rotation_derivative
+
+    #check to make sure direction is correct
+#    quat_thisdir = transition_quaternion(self.quat_curr, rotation_derivative, self.ACTION_APPLY_TIME)
+#    val_thisdir = self.get_value_rotation(dist_rotation=QuaternionDistance(quat_thisdir, self.goal_quat))
+#    quat_negdir = transition_quaternion(self.quat_curr, -1.*rotation_derivative, self.ACTION_APPLY_TIME)
+#    val_negdir = self.get_value_rotation(dist_rotation=QuaternionDistance(quat_negdir, self.goal_quat))
+#    if (val_thisdir < val_negdir):
+#      print 'ROT DIRECTION ERROR vals this dir: ' + str(val_thisdir) + '  neg dir: ' + str(val_negdir)
+#    else:
+#      print 'rotdir good'
+
+
+
 
   def get_cost(self):
     return self.get_cost_translation() + self.get_cost_rotation()
@@ -37,10 +97,8 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
   def get_qvalue(self):
     return self.get_qvalue_translation() + self.get_qvalue_rotation()
 
-  def get_q_derivative(self):
-    q_rot = self.get_qderivative_rotation()
-    q_trans = self.get_qderivative_translation()
-    return np.append(q_trans, q_rot)
+
+    
 
 
   #parts split into translation and rotation
@@ -65,22 +123,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
   def get_qvalue_translation(self):
     return self.get_cost_translation() + self.get_value_translation(self.dist_translation_aftertrans)
 
-  def get_qderivative_translation(self):
-    translation_diff = self.robot_state_after_action.ee_trans[0:3,3] - self.goal_pos
-    dist_to_go = np.linalg.norm(translation_diff)
-    
-    if dist_to_go > self.TRANSLATION_DELTA_SWITCH:
-      translation_derivative = self.TRANSLATION_LINEAR_COST_MULT_TOTAL*(translation_diff/dist_to_go)
-    else:
-      translation_derivative = self.TRANSLATION_CONSTANT_ADD*(translation_diff/dist_to_go)
-      translation_derivative += self.TRANSLATION_QUADRATIC_COST_MULTPLIER*translation_diff
-
-    #hacky part to make it not jumpy
-    dist_translation_limit = 2e-2;
-    if (dist_to_go < dist_translation_limit):
-      translation_derivative *= dist_to_go/dist_translation_limit;
-
-    return translation_derivative / self.ROBOT_TRANSLATION_COST_MULTIPLIER
+  
 
 
 
@@ -105,40 +148,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
   def get_qvalue_rotation(self):
     return self.get_cost_rotation() + self.get_value_rotation(self.dist_rotation_aftertrans)
 
-  def get_qderivative_rotation(self):
-    quat_between = transmethods.quaternion_multiply(self.goal_quat, transmethods.quaternion_inverse(self.quat_after_trans))
-
-    rotation_derivative = quat_between[0:-1]
-    rotation_derivative /= np.linalg.norm(rotation_derivative)
-
-    if self.dist_rotation_aftertrans > self.ROTATION_DELTA_SWITCH:
-      rotation_derivative_magnitude = self.ROTATION_LINEAR_COST_MULT_TOTAL
-    else:
-      rotation_derivative_magnitude = self.ROTATION_CONSTANT_ADD
-      rotation_derivative_magnitude += self.ROTATION_QUADRATIC_COST_MULTPLIER*self.dist_rotation_aftertrans
-
-    rotation_derivative *= self.ROTATION_MULTIPLIER * rotation_derivative_magnitude / self.ROBOT_ROTATION_COST_MULTIPLIER
-
-    if (np.sum(self.goal_quat * self.quat_after_trans)) > 0:
-      rotation_derivative *= -1
-
-    #check to make sure direction is correct
-#    quat_thisdir = transition_quaternion(self.quat_curr, rotation_derivative, self.ACTION_APPLY_TIME)
-#    val_thisdir = self.get_value_rotation(dist_rotation=QuaternionDistance(quat_thisdir, self.goal_quat))
-#    quat_negdir = transition_quaternion(self.quat_curr, -1.*rotation_derivative, self.ACTION_APPLY_TIME)
-#    val_negdir = self.get_value_rotation(dist_rotation=QuaternionDistance(quat_negdir, self.goal_quat))
-#    if (val_thisdir < val_negdir):
-#      print 'ROT DIRECTION ERROR vals this dir: ' + str(val_thisdir) + '  neg dir: ' + str(val_negdir)
-#    else:
-#      print 'rotdir good'
-
-    #hacky part to make it not jumpy
-    dist_rotation_limit = np.pi/12.;
-    #print 'dist rotation: ' + str(self.dist_rotation_aftertrans)
-    if (self.dist_rotation_aftertrans < dist_rotation_limit):
-      rotation_derivative *= self.dist_rotation_aftertrans/dist_rotation_limit;
-
-    return rotation_derivative
+  
 
 
 
@@ -151,7 +161,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 
   ROTATION_LINEAR_MULTIPLIER = 0.20
   #ROTATION_DELTA_SWITCH = np.pi/7.
-  ROTATION_DELTA_SWITCH = np.pi/32.
+  ROTATION_DELTA_SWITCH = np.pi/32. #.0981
   ROTATION_CONSTANT_ADD = 0.01
   ROTATION_MULTIPLIER = 0.07
 
@@ -195,15 +205,15 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 
   #other constants that are cached for faster computation
   def calculate_cached_constants(self):
-    self.TRANSLATION_LINEAR_COST_MULT_TOTAL = self.TRANSLATION_LINEAR_MULTIPLIER + self.TRANSLATION_CONSTANT_ADD
-    self.TRANSLATION_QUADRATIC_COST_MULTPLIER = self.TRANSLATION_LINEAR_MULTIPLIER/self.TRANSLATION_DELTA_SWITCH
+    self.TRANSLATION_LINEAR_COST_MULT_TOTAL = self.TRANSLATION_LINEAR_MULTIPLIER + self.TRANSLATION_CONSTANT_ADD #2.45
+    self.TRANSLATION_QUADRATIC_COST_MULTPLIER = self.TRANSLATION_LINEAR_MULTIPLIER/self.TRANSLATION_DELTA_SWITCH #2.25 / .07 = 32.1423
     self.TRANSLATION_QUADRATIC_COST_MULTPLIER_HALF = 0.5 * self.TRANSLATION_QUADRATIC_COST_MULTPLIER
-    self.TRANSLATION_LINEAR_COST_SUBTRACT = self.TRANSLATION_LINEAR_MULTIPLIER * self.TRANSLATION_DELTA_SWITCH * 0.5
+    self.TRANSLATION_LINEAR_COST_SUBTRACT = self.TRANSLATION_LINEAR_MULTIPLIER * self.TRANSLATION_DELTA_SWITCH * 0.5 #.5*2.25*.07 = 0.07875
 
-    self.ROTATION_LINEAR_COST_MULT_TOTAL = self.ROTATION_LINEAR_MULTIPLIER + self.ROTATION_CONSTANT_ADD
-    self.ROTATION_QUADRATIC_COST_MULTPLIER = self.ROTATION_LINEAR_MULTIPLIER/self.ROTATION_DELTA_SWITCH
-    self.ROTATION_QUADRATIC_COST_MULTPLIER_HALF = 0.5 * self.ROTATION_QUADRATIC_COST_MULTPLIER
-    self.ROTATION_LINEAR_COST_SUBTRACT = self.ROTATION_LINEAR_MULTIPLIER * self.ROTATION_DELTA_SWITCH * 0.5
+    self.ROTATION_LINEAR_COST_MULT_TOTAL = self.ROTATION_LINEAR_MULTIPLIER + self.ROTATION_CONSTANT_ADD #0.2 + 0.01 = 0.21
+    self.ROTATION_QUADRATIC_COST_MULTPLIER = self.ROTATION_LINEAR_MULTIPLIER/self.ROTATION_DELTA_SWITCH #.2 / .0981 = 2.0387
+    self.ROTATION_QUADRATIC_COST_MULTPLIER_HALF = 0.5 * self.ROTATION_QUADRATIC_COST_MULTPLIER #1.0194
+    self.ROTATION_LINEAR_COST_SUBTRACT = self.ROTATION_LINEAR_MULTIPLIER * self.ROTATION_DELTA_SWITCH * 0.5 #0.2 * .0981 *.5 = 0.00981
 
 
 def UserInputToRobotAction(user_input):

@@ -3,29 +3,30 @@
 #Sets up the robot, environment, and goals to use shared autonomy code for grasping objects
 
 from AdaHandler import *
-from ada_teleoperation.AdaTeleopHandler import possible_teleop_interface_names
+#from ada_teleoperation.AdaTeleopHandler import possible_teleop_interface_names
 from AdaAssistancePolicy import goal_from_object
-import rospy
-import rospkg
-import IPython
+#import rospy
+#import rospkg
+#import IPython
 
 import numpy as np
-import Goal
+from Goal import Goal
 from functools import partial
 
 
 
 #import adapy
 from env import SimpleEnv
-import prpy
+#import prpy
 
 
 VIEWER_DEFAULT = 'InteractiveMarker'
 
 #def Initialize_Adapy(args, env_path='/environments/tablewithobjects_assisttest.env.xml'):
-def Initialize_Adapy():
-    env = SimpleEnv(visualize=False)
+def Initialize_Env():
+    env = SimpleEnv(visualize=True)
     #Init_Robot(robot)
+    
     return env
 
 def Initialize_Goals(env,  randomize_goal_init=False):
@@ -42,22 +43,17 @@ def Initialize_Goals(env,  randomize_goal_init=False):
 
 
 def Init_Goals(env, robot, randomize_goal_init=False):
+    #TODO: Make skill goal pairs for each of tasks
     goal_objects = []
-    goal_objects.append(env.block)
-    #env.block_position = [0.5, 0.4, 0.2]
-    #env.block_quaternion = [0, 0, 0, 1]
-    #goal_objects.append(env.GetKinBody('fuze_bottle'))
+
+    
+    goal_objects.append(env.block1)
+
     
     if randomize_goal_init:
       env.block_position += np.random.rand(3)*0.10 - 0.05
       env.reset_box()
-    # if randomize_goal_init:
-    #   obj_pose[0:3,3] += np.random.rand(3)*0.10 - 0.05
-    # goal_objects[1].SetTransform(obj_pose)
-    # obj_pose= robot.GetTransform()
-    # #disable collisions for IK
-    # for obj in goal_objects:
-    #   obj.Enable(False)
+
 
     goals = Set_Goals_From_Objects(env,goal_objects)
 
@@ -89,11 +85,13 @@ def goal_from_object(env,object):
   num_sampled = 0
   manip = env.panda
   obj_pos = object.get_position()
-  pose = object.get_orientation()
-  ik_sol = manip._inverse_kinematics(obj_pos, dquaternion=[0]*4)
-  target_poses.append(pose)
+  obj_quat = object.get_orientation()
+  #print(pose)
+  ik_sol = manip._inverse_kinematics(obj_pos, [0]*4)
+  target_poses.append(obj_quat)
   target_iks.append(ik_sol)
-  return Goal(pose, target_poses, target_iks)
+  print(ik_sol)
+  return Goal(obj_quat,obj_pos , target_poses = target_poses, target_iks = target_iks)
 
 
 
@@ -127,23 +125,23 @@ if __name__ == "__main__":
                       #help='environment XML file; defaults to an empty environment')
   parser.add_argument('--debug', action='store_true',
                       help='enable debug logging')
-  parser.add_argument('-input', '--input-interface-name', help='name of the input interface. Possible choices: ' + str(possible_teleop_interface_names), type=str)
+  #parser.add_argument('-input', '--input-interface-name', help='name of the input interface. Possible choices: ' + str(possible_teleop_interface_names), type=str)
   parser.add_argument('-joy_dofs', '--num-input-dofs', help='number of dofs of input, either 2 or 3', type=int, default=2)
   args = parser.parse_args()
 
-  rospy.init_node('ada_assistance_policy', anonymous = True)
+  #.init_node('ada_assistance_policy', anonymous = True)
   
-  env = Initialize_Adapy()
+  env = Initialize_Env()
     #env,robot = Initialize_Adapy(args, env_path=env_path)
-
+  time.sleep(30)
   #finish_trial_func_withrobot = partial(Finish_Trial_Func, robot=robot)
   #
   for i in range(1):
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
     ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
-    ada_handler.execute_policy(simulate_user=False, direct_teleop_only=False, fix_magnitude_user_command=False, finish_trial_func=finish_trial_func_withrobot)
+    ada_handler.execute_policy(simulate_user=True, direct_teleop_only=False, fix_magnitude_user_command=False)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 
-  IPython.embed()
+
 

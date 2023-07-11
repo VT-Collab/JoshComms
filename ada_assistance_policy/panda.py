@@ -46,14 +46,48 @@ class Panda():
         ee_states = p.getLinkState(self.panda, 11)
         ee_position = list(ee_states[4])
         ee_quaternion = list(ee_states[5])
+        self.state = {}
         gripper_contact = p.getContactPoints(bodyA=self.panda, linkIndexA=10)
-        self.state['joint_position'] = np.asarray(joint_position)
-        self.state['joint_velocity'] = np.asarray(joint_velocity)
-        self.state['joint_torque'] = np.asarray(joint_torque)
+        self.state['q'] = np.asarray(joint_position)
+        self.state['dq'] = np.asarray(joint_velocity)
+        self.state["tau"] = np.asarray(joint_torque)
         self.state['ee_position'] = np.asarray(ee_position)
         self.state['ee_quaternion'] = np.asarray(ee_quaternion)
         self.state['ee_euler'] = np.asarray(p.getEulerFromQuaternion(ee_quaternion))
         self.state['gripper_contact'] = len(gripper_contact) > 0
+
+    def _read_state2(self):
+        joint_position = [0]*9
+        joint_velocity = [0]*9
+        joint_torque = [0]*9
+        joint_states = p.getJointStates(self.panda, range(9))
+        for idx in range(9):
+            joint_position[idx] = joint_states[idx][0]
+            joint_velocity[idx] = joint_states[idx][1]
+            joint_torque[idx] = joint_states[idx][3]
+        ee_states = p.getLinkState(self.panda, 11)
+        ee_position = list(ee_states[4])
+        ee_quaternion = list(ee_states[5])
+        self.state = {}
+        gripper_contact = p.getContactPoints(bodyA=self.panda, linkIndexA=10)
+        self.state['q'] = np.asarray(joint_position[0:7])
+        self.state['dq'] = np.asarray(joint_velocity[0:7])
+        self.state["tau"] = np.asarray(joint_torque[0:7])
+        self.state['ee_position'] = np.asarray(ee_position)
+        self.state['ee_quaternion'] = np.asarray(ee_quaternion)
+        self.state['ee_euler'] = np.asarray(p.getEulerFromQuaternion(ee_quaternion))
+        self.state['gripper_contact'] = len(gripper_contact) > 0
+        linear_jacobian, angular_jacobian = p.calculateJacobian(self.panda, 11, [0, 0, 0], list(joint_position), [0]*9, [0]*9)
+        linear_jacobian = np.asarray(linear_jacobian)[:,:7]
+        angular_jacobian = np.asarray(angular_jacobian)[:,:7]
+        full_jacobian = np.zeros((6,7))
+        full_jacobian[0:3,:] = linear_jacobian
+        full_jacobian[3:6,:] = angular_jacobian
+        self.state['J'] = full_jacobian
+       
+
+        return self.state
+
 
     def _read_jacobian(self):
         linear_jacobian, angular_jacobian = p.calculateJacobian(self.panda, 11, [0, 0, 0], list(self.state['joint_position']), [0]*9, [0]*9)

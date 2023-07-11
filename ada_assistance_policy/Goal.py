@@ -1,8 +1,8 @@
 import numpy as np
 import scipy
 
-import tf
-import tf.transformations as transmethods
+#import tf
+import tf as transmethods
 
 from Utils import *
 
@@ -12,9 +12,9 @@ from Utils import *
 
 class Goal: 
     
-    def __init__(self, pose, target_poses = list(), target_iks = list()):
+    def __init__(self, pose,pos, target_poses = list(), target_iks = list()):
       self.pose = pose
-      self.pos = pose[0:3,3]
+      self.pos = pos
 
       if not target_poses:
         target_poses.append(pose)
@@ -22,17 +22,18 @@ class Goal:
       #copy the targets
       self.target_poses = list(target_poses)
       self.target_iks = list(target_iks)
-
-      self.compute_quaternions_from_target_poses()
+      self.target_quaternions = target_poses
+      #self.compute_quaternions_from_target_poses()
 
       #print 'NUM POSES: ' + str(len(self.target_poses))
 
     def compute_quaternions_from_target_poses(self):
+      #print(self.target_poses)
       self.target_quaternions = [transmethods.quaternion_from_matrix(target_pose) for target_pose in self.target_poses]
     
     def at_goal(self, end_effector_trans):
-      for pose,quat in zip(self.target_poses, self.target_quaternions):
-        pos_diff =  pose[0:3,3] - end_effector_trans[0:3,3]
+      for pose,quat in zip(self.target_poses,self.target_quaternions):
+        pos_diff =  self.pos - end_effector_trans[0:3,3]
         trans_dist = np.linalg.norm(pos_diff)
 
         quat_dist = QuaternionDistance(transmethods.quaternion_from_matrix(end_effector_trans), quat)

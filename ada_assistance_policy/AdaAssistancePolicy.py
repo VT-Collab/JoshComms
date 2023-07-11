@@ -4,7 +4,7 @@ import GoalPredictor as GoalPredictor
 #from ada_teleoperation.RobotState import Action
 from teleop_comms_Test import *
 from AssistancePolicy import *
-from OpenraveUtils import *
+#from OpenraveUtils import *
 import math
 import numpy as np
 import time
@@ -28,12 +28,14 @@ class AdaAssistancePolicy:
   def get_action(self, goal_distribution = np.array([]), **kwargs):
     if goal_distribution.size == 0:
       goal_distribution = self.goal_predictor.get_distribution()
+    #twist is qdot brought from a a mix of input and goal prediction, gets human action through internal update run
+    assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution, **kwargs)
+    #assisted_action = twist=self.assist_policy.get_assisted_action(goal_distribution, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
+    #generates twist for assist policy representing the angular and linear velocity of each joint along the 7 points
+    #switch modes dependent on cofidence level
+    return assisted_qdot
 
-    assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution, **kwargs), finger_vel=self.assist_policy.user_action.finger_vel, switch_mode_to=self.assist_policy.user_action.switch_mode_to)
-
-    return assisted_action
-
-
+  #uses diffent goal distribution
   def get_blend_action(self, goal_distribution = np.array([]), **kwargs):
     if goal_distribution.size == 0:
       goal_distribution = self.goal_predictor.get_distribution()
@@ -47,8 +49,9 @@ class AdaAssistancePolicy:
     if blend_confidence_function_prob_diff(goal_distribution):
       goal_distribution_all_max = np.zeros(len(goal_distribution))
       goal_distribution_all_max[max_prob_goal_ind] = 1.0
-      assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), finger_vel=self.assist_policy.user_action.finger_vel, switch_mode_to=self.assist_policy.user_action.switch_mode_to)
-      return assisted_action
+      #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
+      assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution, **kwargs)
+      return assisted_qdot
     else:
       #if we don't meet confidence function, use direct teleop
       return self.assist_policy.user_action

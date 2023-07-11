@@ -2,7 +2,7 @@ import numpy as np
 import scipy.misc
 import IPython
 
-logsumexp = scipy.misc.logsumexp
+logsumexp = scipy.special.logsumexp
 
 class GoalPredictor(object):
   max_prob_any_goal = 0.99

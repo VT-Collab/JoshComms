@@ -49,11 +49,11 @@ class AssistancePolicy:
     #TODO how do we handle mode switch vs. not?
     total_action_twist = np.zeros(action_dimension)
     for goal_policy,goal_prob in zip(self.goal_assist_policies, goal_distribution):
-      total_action_twist += goal_prob * goal_policy.get_action()
+      total_action_twist += goal_prob * goal_policy.get_action() #goal policy gets smallest action for the relevant goal given huber parameters, multiplies by probability level for magniutde
 
     total_action_twist /= np.sum(goal_distribution)
 
-    to_ret_twist = total_action_twist + self.user_action.twist
+    to_ret_twist = total_action_twist + self.user_action.twist #linear blend
     #print "before magnitude adjustment: " + str(to_ret_twist)
     if fix_magnitude_user_command:
       to_ret_twist *= np.linalg.norm(self.user_action.twist)/np.linalg.norm(to_ret_twist)
