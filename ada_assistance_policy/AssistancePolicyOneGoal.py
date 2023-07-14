@@ -10,6 +10,7 @@ TargetPolicyClass = TargetPolicy.HuberAssistancePolicy
 class AssistancePolicyOneGoal:
   def __init__(self, goal):
     self.goal = goal
+    #self.panda = panda 
 
     self.target_assist_policies = []
     for pose in self.goal.target_poses:
@@ -18,12 +19,12 @@ class AssistancePolicyOneGoal:
       self.target_assist_policies.append(TargetPolicyClass(goal))
     self.min_val_ind = 0
 
-  def update(self, robot_state, user_action):
+  def update(self, robot_state, user_action,panda):
     self.last_robot_state = robot_state
     self.last_user_action = user_action
 
     for target_policy in self.target_assist_policies:
-      target_policy.update(robot_state, user_action)
+      target_policy.update(robot_state, user_action,panda)
 
     values = [targ_policy.get_value() for targ_policy in self.target_assist_policies]
     self.min_val_ind = np.argmin(values)

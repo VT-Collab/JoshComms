@@ -19,8 +19,8 @@ class AdaAssistancePolicy:
 
     self.goals = goals
 
-  def update(self, robot_state, user_action):
-    self.assist_policy.update(robot_state, user_action)
+  def update(self, robot_state, user_action,panda):
+    self.assist_policy.update(robot_state, user_action,panda)
     values,q_values = self.assist_policy.get_values()
     self.goal_predictor.update_distribution(values, q_values)
     self.robot_state = robot_state

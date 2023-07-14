@@ -14,7 +14,8 @@ class Goal:
     
     def __init__(self, pose,pos, target_poses = list(), target_iks = list()):
       self.pose = pose
-      self.pos = pos
+      self.quat = pose
+      self.pos = list(pos)
 
       if not target_poses:
         target_poses.append(pose)

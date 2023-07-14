@@ -5,11 +5,11 @@ from Goal import *
 class UserBot:
     def __init__(self, goals):
         self.goals = goals
-        self.goal_num = 0
+        self.goal_num = 1
         
 
         # scaling factors for generating commands
-        self.position_scale_vector = 10.
+        self.position_scale_vector = 1.
 
         self.clip_norm_val = 0.25
         self.usr_cmd_dim = 3
@@ -26,15 +26,16 @@ class UserBot:
         if goal_pos is None:
             goal_pos = self.goals[self.goal_num].pos
         pos_diff =  self.position_scale_vector*(goal_pos - end_effector_pos)
+        
 
         pos_diff_norm = np.linalg.norm(pos_diff)
 
         if (pos_diff_norm > self.clip_norm_val):
           pos_diff /= pos_diff_norm/self.clip_norm_val
-
-        # add colored noise to the command
+        #
+        #
         usr_cmnd = pos_diff
-        usr_cmnd[0:2] *= -1.
+        usr_cmnd[0:2] *= 1.
         #usr_cmnd += self.noise_pwr*np.linalg.norm(usr_cmnd)*np.random.randn(self.usr_cmd_dim)  
         #usr_cmnd += self.correl_coeff.dot(self.white_noise_hist)
         #self.white_noise_hist = np.vstack([usr_cmnd, self.white_noise_hist[0:-1,:]])

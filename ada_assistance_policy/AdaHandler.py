@@ -61,7 +61,7 @@ class AdaHandler:
       else:
         self.goal_object_poses = goal_object_poses
 
-      self.sim = env.panda
+      self.panda = env.panda
       #self.manip = self.robot.arm
     
       #self.ada_teleop = AdaTeleopHandler(env, robot, input_interface_name, num_input_dofs, use_finger_mode)#, is_done_func=Teleop_Done)
@@ -94,7 +94,9 @@ class AdaHandler:
       if simulate_user:
         self.user_bot = UserBot(self.goals)
         self.user_bot.set_user_goal(0)
-        self.robot_state = self.sim._read_state2()
+        #self.panda.read_state()
+        #self.panda.read_jacobian()
+        self.robot_state = self.panda.state
         
       else:
         print('[*] Connecting to low-level controller...')
@@ -103,9 +105,9 @@ class AdaHandler:
         
       #vis = vistools.VisualizationHandler()
 
-      robot_state = self.robot_state
-      
-      ee_pos,ee_trans = joint2pose(robot_state['q'])
+      #robot_state = self.robot_state
+      start_state = self.robot_state
+      ee_pos,ee_trans = joint2pose(self.robot_state['q'])
       time_per_iter = 1./CONTROL_HZ
       PORT_robot = 8080
 
@@ -126,31 +128,56 @@ class AdaHandler:
             target_policy.set_constants(huber_translation_linear_multiplier=1.55, huber_translation_delta_switch=0.11, huber_translation_constant_add=0.2, huber_rotation_linear_multiplier=0.20, huber_rotation_delta_switch=np.pi/72., huber_rotation_constant_add=0.3, huber_rotation_multiplier=0.20, robot_translation_cost_multiplier=14.0, robot_rotation_cost_multiplier=0.05)
 
 
-      #if specified traj data for recording, initialize
-      if traj_data_recording:
-        assist_type = 'shared_auton'
-        if direct_teleop_only:
-          assist_type = 'None'
-        elif blend_only:
-          assist_type = 'blend'
-        elif fix_magnitude_user_command:
-          assist_type = 'shared_auton_prop'
+      # #if specified traj data for recording, initialize
+      # if traj_data_recording:
+      #   assist_type = 'shared_auton'
+      #   if direct_teleop_only:
+      #     assist_type = 'None'
+      #   elif blend_only:
+      #     assist_type = 'blend'
+      #   elif fix_magnitude_user_command:
+      #     assist_type = 'shared_auton_prop'
         
-        traj_data_recording.set_init_info(start_state=copy.deepcopy(robot_state), goals=copy.deepcopy(self.goals), input_interface_name=self.ada_teleop.teleop_interface, assist_type=assist_type)
-
+        #traj_data_recording.set_init_info(start_state=copy.deepcopy(robot_state), goals=copy.deepcopy(self.goals), input_interface_name=self.ada_teleop.teleop_interface, assist_type=assist_type)
+      start_time = time.time()
+      if simulate_user:
+        self.robot_state = self.env.panda.state
+        user_goal = self.user_bot.goal_num
+        goal_position = self.robot_policy.assist_policy.goal_assist_policies[user_goal].goal.pos
+        #xdes = [0]*6
+        xdes = [-goal_position[1],-goal_position[0],-goal_position[2],start_state['x'] [3],start_state['x'] [4],start_state['x'] [5]]
+        xdes[3] = wrap_angles(xdes[3])
+        xdes[4] = wrap_angles(xdes[4])
+        xdes[5] = wrap_angles(xdes[5])
+      #print(xdes)
+      
+        
       while True:
-        start_time = time.time()
+        
+        
         xdot = [0]*6
         robot_dof_values = 7
         if simulate_user:
-          self.robot_state = self.sim._read_state2()
+          self.robot_state = self.env.panda.state
+          #self.robot_state = self.panda.state()
           #get pose of min value target for user's goal
-          user_goal = self.user_bot.goal_num
-          ee_pos,ee_trans = joint2pose(robot_state['q'])
-          min_val_target_pose = self.robot_policy.assist_policy.goal_assist_policies[user_goal].goal.pos
-          user_input_velocity = self.user_bot.get_usr_cmd(ee_pos, goal_pos=min_val_target_pose)
+          
+          ee_pos,ee_trans = joint2pose(self.robot_state['q'])
+
           #user_input_all = UserInputData(user_input_velocity)
-          xdot [:3]= user_input_velocity
+          xcurr = self.robot_state['x']
+          
+          scale = 1
+          xdot = 1*scale * (xdes - xcurr)
+          future = xdot[:3] + xcurr[:3]
+          while future[-1] < .03:
+            xdot[2] += .001
+            future = xdot[:3] + xcurr[:3]
+          #print(xdot)
+          #print(xdes)#[-0.35, 0.5, 0.05, 3.141592653589793, -3.882788861530337e-33, -4.266421588589641e-17]
+          print(xcurr)
+
+          #time.sleep(1)
           #user_input_all.switch_assistance_val
           
           if self.goals[user_goal].at_goal(ee_trans):
@@ -158,13 +185,12 @@ class AdaHandler:
           else:
             A_pressed = 0
         else:
-          robot_state = readState(self.PORT_robot)
-          ee_pos,ee_trans = joint2pose(robot_state['q'])  
-          print('[*] Ready for a teleoperation...')
+          self.robot_state = readState(self.PORT_robot)
+          ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
           interface = Joystick()
           z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
           
-        
+         
 
           if A_pressed:
               xdot[3] = -action_scale * z[0]
@@ -180,10 +206,25 @@ class AdaHandler:
             return True
 
         
-        #print user_input_all
-#          user_input_velocity = user_input_all.move_velocity
-#          user_input_closehand = user_input_all.close_hand_velocity
-        direct_teleop_action = xdot2qdot(xdot, robot_state) #qdot
+#         #print user_input_all
+# #          user_input_velocity = user_input_all.move_velocity
+# #          user_input_closehand = user_input_all.close_hand_velocity
+#         print("CurrentAngle",self.robot_state["q"])
+#         print("PositionMoved:",xdot)
+#         print("What it should be:",[0.5, -0.35, 0.05])
+        direct_teleop_action = xdot2qdot(xdot, self.env.panda.state) #qdot
+        #print(xdot/np.linalg.norm(xdot))
+
+#         #print("TELE",direct_teleop_action)
+        #pos1,pose1 = joint2pose(direct_teleop_action)
+      #print("REALSHEET:",pos1/np.linalg.norm(pos1))
+        #break
+        #print("REALSHEET:",pose1)
+#         _,pose2 = joint2pose((self.robot_state["q"])[:7])
+#         #print("What it should be:",[0.5, -0.35, 0.05])
+#         #print("What it should be:",pose2)
+
+#         print("DIFF:",pose2-pose1)
         if simulate_user:
           auto_or_noto = 1
         else:
@@ -192,7 +233,7 @@ class AdaHandler:
         if not direct_teleop_only and auto_or_noto:
           use_assistance = not use_assistance
         #When this updates, it updates assist policy and goal policies
-        self.robot_policy.update(robot_state, direct_teleop_action)
+        self.robot_policy.update(self.robot_state, direct_teleop_action,self.panda)
         if use_assistance and not direct_teleop_only:
           #action = self.user_input_mapper.input_to_action(user_input_all, robot_state)
           #blend vs normal only dictates goal prediction method and use of confidence screening function to decide whether to act.
@@ -206,10 +247,19 @@ class AdaHandler:
 
         #qdot = xdot2qdot(action, robot_state)
         if simulate_user:
+          #print("Distance To Go:",(xcurr-xdes))
+          #print("Movement:",xdot)
+          #time.sleep(.5)
           self.env.step(action)
+          
         else:
           send2robot(conn, action)
-
+     
+        end_time=time.time()
+        if end_time-start_time > 300.0:
+          print("DONE DONE DONE")
+          break
+       
        
 
 #        for goal,goal_obj in zip(self.goals, self.goal_objects):
@@ -222,22 +272,19 @@ class AdaHandler:
 
         ### end visualization ###
 
-        end_time=time.time()
+        
 
         if traj_data_recording:
           traj_data_recording.add_datapoint(robot_state=copy.deepcopy(robot_state), robot_dof_values=copy.copy(robot_dof_values), user_input_all=copy.deepcopy(user_input_all), direct_teleop_action=copy.deepcopy(direct_teleop_action), executed_action=copy.deepcopy(action), goal_distribution=self.robot_policy.goal_predictor.get_distribution())
 
 
 
-        #print ('time: %.5f' % (end_time-start_time)) + '   per iter: ' + str(time_per_iter)
-        #print 'sleep time: ' + str(max(0., time_per_iter - (end_time-start_time)))
+ 
 
         #rospy.sleep( max(0., time_per_iter - (end_time-start_time)))
 
         #if (max(action.finger_vel) > 0.5):
-        if end_time-start_time > 3.0:
-          print("potato")
-          break
+        
 
       #set the intended goal and write data to file
       if traj_data_recording:

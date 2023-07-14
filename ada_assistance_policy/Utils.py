@@ -147,6 +147,9 @@ def readState(conn):
 
 def xdot2qdot(xdot, state):
 	J_pinv = np.linalg.pinv(state["J"])
+	xdot[3] = wrap_angles(xdot[3])
+	xdot[4] = wrap_angles(xdot[4])
+	xdot[5] = wrap_angles(xdot[5])
 	
 	return J_pinv @ np.asarray(xdot)
 
@@ -170,6 +173,14 @@ def joint2pose(q):
 	H = np.linalg.multi_dot([H1, H2, H3, H4, H5, H6, H7, H_panda_hand])
 	return H[:,3][:3], H[:,:][:]
 
+def wrap_angles(theta):
+	if theta < -np.pi:
+		theta += 2*np.pi
+	elif theta > np.pi:
+		theta -= 2*np.pi
+	else:
+		theta = theta
+	return theta
 
 
 class Joystick(object):

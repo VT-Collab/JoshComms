@@ -7,6 +7,7 @@ class AssistancePolicy:
 
   def __init__(self, goals):
     self.goals = goals
+    #self.panda = panda
 
     self.goal_assist_policies = []
     for goal in goals:
@@ -15,14 +16,14 @@ class AssistancePolicy:
     #self.user_input_mapper = UserInputMapper()
 
 
-  def update(self, robot_state, user_action):
+  def update(self, robot_state, user_action,panda):
     self.robot_state = robot_state
     #user action corresponds to the effect of direct teleoperation on the robot
     #self.user_action = self.user_input_mapper.input_to_action(user_input, robot_state)
     self.user_action = user_action
 
     for goal_policy in self.goal_assist_policies:
-      goal_policy.update(robot_state, self.user_action)
+      goal_policy.update(robot_state, self.user_action,panda)
 
   def get_values(self):
     values = np.ndarray(len(self.goal_assist_policies))
@@ -52,11 +53,11 @@ class AssistancePolicy:
       total_action_twist += goal_prob * goal_policy.get_action() #goal policy gets smallest action for the relevant goal given huber parameters, multiplies by probability level for magniutde
 
     total_action_twist /= np.sum(goal_distribution)
-
-    to_ret_twist = total_action_twist + self.user_action.twist #linear blend
+    #user action is 1x7 joint space
+    to_ret_twist = total_action_twist + self.user_action #linear blend
     #print "before magnitude adjustment: " + str(to_ret_twist)
     if fix_magnitude_user_command:
-      to_ret_twist *= np.linalg.norm(self.user_action.twist)/np.linalg.norm(to_ret_twist)
+      to_ret_twist *= np.linalg.norm(self.user_action)/np.linalg.norm(to_ret_twist)
     #print "after magnitude adjustment: " + str(to_ret_twist)
 
     return to_ret_twist

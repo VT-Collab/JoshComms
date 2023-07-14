@@ -16,15 +16,15 @@ from functools import partial
 
 
 #import adapy
-from env import SimpleEnv
+from env2 import SimpleEnv
 #import prpy
 
 
 VIEWER_DEFAULT = 'InteractiveMarker'
 
 #def Initialize_Adapy(args, env_path='/environments/tablewithobjects_assisttest.env.xml'):
-def Initialize_Env():
-    env = SimpleEnv(visualize=True)
+def Initialize_Env(visualize=False):
+    env = SimpleEnv(visualize)
     #Init_Robot(robot)
     
     return env
@@ -48,11 +48,14 @@ def Init_Goals(env, robot, randomize_goal_init=False):
 
     
     goal_objects.append(env.block1)
+    goal_objects.append(env.block2)
+    goal_objects.append(env.block3)
+    goal_objects.append(env.door)
 
     
-    if randomize_goal_init:
-      env.block_position += np.random.rand(3)*0.10 - 0.05
-      env.reset_box()
+    # if randomize_goal_init:
+    #   env.block_position += np.random.rand(3)*0.10 - 0.05
+    #   env.reset_box()
 
 
     goals = Set_Goals_From_Objects(env,goal_objects)
@@ -131,16 +134,16 @@ if __name__ == "__main__":
 
   #.init_node('ada_assistance_policy', anonymous = True)
   
-  env = Initialize_Env()
+  env = Initialize_Env(visualize=True)
     #env,robot = Initialize_Adapy(args, env_path=env_path)
-  time.sleep(30)
+  #time.sleep(30)
   #finish_trial_func_withrobot = partial(Finish_Trial_Func, robot=robot)
   #
   for i in range(1):
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
     ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
-    ada_handler.execute_policy(simulate_user=True, direct_teleop_only=False, fix_magnitude_user_command=False)
+    ada_handler.execute_policy(simulate_user=True, direct_teleop_only=True, fix_magnitude_user_command=False)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 
 

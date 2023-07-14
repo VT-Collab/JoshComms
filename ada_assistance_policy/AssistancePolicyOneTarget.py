@@ -42,7 +42,7 @@ class AssistancePolicyOneTarget(object):
       if scale > limit:
           qdot = np.asarray([qdot[i] * limit/scale for i in range(7)])
       current_q = robot_state["q"]
-      qafter = current_q + (qdot*self.ACTION_APPLY_TIME)
+      qafter = current_q[0:7] + (qdot*self.ACTION_APPLY_TIME)
       return qafter
 
 
