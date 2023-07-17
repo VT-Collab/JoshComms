@@ -135,7 +135,7 @@ def main():
 
     print('[*] Connecting to low-level controller...')
 
-    #conn = connect2robot(PORT_robot)
+    conn = connect2robot(PORT_robot)
 
     print('[*] Connecting to test comms...')
     conn2 = connect2comms(PORT_comms)
