@@ -98,23 +98,6 @@ def goal_from_object(env,object):
 
 
 
-def Finish_Trial_Func(robot):
-  if robot.simulated:
-    num_hand_dofs = len(robot.arm.hand.GetDOFValues())
-    robot.arm.hand.SetDOFValues(np.ones(num_hand_dofs)*0.8)
-  else:
-    robot.arm.hand.CloseHand()
-
-def Reset_Robot(robot):
-  if robot.simulated:
-    num_hand_dofs = len(robot.arm.hand.GetDOFValues())
-    inds, pos = robot.configurations.get_configuration('home')
-    with robot.GetEnv():
-      robot.SetDOFValues(pos, inds)
-      robot.arm.hand.SetDOFValues(np.ones(num_hand_dofs)*0.1)
-  else:
-    robot.arm.hand.OpenHand()
-    robot.arm.PlanToNamedConfiguration('home', execute=True)
 
 
 

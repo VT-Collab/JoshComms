@@ -7,6 +7,10 @@ import argparse
 #from utils import TrajectoryClient, JoystickControl
 from utils_panda import *
 
+"""
+TODO
+- instantiate final rotation(R, P, P_hat) outside the loop
+"""
 
 
 def record_demo(args):
@@ -17,7 +21,7 @@ def record_demo(args):
     PORT = 8080
     PORT_gripper = 8081
     conn = connect2robot(PORT)
-    joystick = JoystickControl()
+    remote = RemoteClient()
     #Connecting to grippper
     print('[*] Connecting to Gripper')
     conn_gripper = connect2gripper(PORT_gripper)
@@ -57,32 +61,31 @@ def record_demo(args):
         state = readState(conn)
         q = state["q"].tolist()
         curr_pos,curr_pose = joint2pose(state["q"])
-        
+
         
         #curr_gripper_pos = robotiq_joint_state
 
-        axes, gripper, mode, slow, start = joystick.getInput() #tuple(z), A_pressed, B_pressed, X_pressed, stop
-                          
+        axes, gripper, mode, slow, start, _ = remote.getInput()#joystick.getInput()
+        remote.print_msg()        
         if start and not record:
             record = True
             start_time = time.time()
             print('[*] Recording the demonstration...')
         elif start and record:
             pickle.dump( demo, open( savename, "wb" ) )
-            
             print("[*] Done!")
-            print("[*] I recorded this many datapoints: ", len(demonstration))
+            #print("[*] I recorded this many datapoints: ", len(demonstration))
             print("[*] Saved file at: ", savename)
             return True
-        
-        #curr_time = time.time()
+
+        # curr_time = time.time()
         # if record and curr_time - start_time >= steptime:
         #     demonstration.append(start_q.tolist() + q)
         #     start_time = curr_time
         
         # actuate gripper
         gripper_ac = 0
-        xdot_h = [0]*6
+        xdot_h = np.zeros(6)
         curr_time = time.time()
 
         if record:
@@ -154,7 +157,7 @@ def record_demo(args):
                 data["gripper_ac"] = gripper_ac
                 demo.append(data)
                 start_time = curr_time
-        
+
         qdot = xdot2qdot(xdot_h, state)
         send2robot(conn, qdot)
 
@@ -179,12 +182,12 @@ def main():
         #rospy.loginfo("Saved demo as: {}".format(savename))
         #rospy.loginfo("Sample Datapoint : {}".format(demo[0]))
     
-    #else:
-        #rospy.loginfo("Demo not saved.")
+    # else:
+#         #rospy.loginfo("Demo not saved.")
 
 if __name__ == "__main__":
     main()
-        #try:
-            #main()
+#         try:
+#             main()
         #except rospy.ROSInterruptException:
             #pass
