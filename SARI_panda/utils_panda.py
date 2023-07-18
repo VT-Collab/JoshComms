@@ -1,66 +1,30 @@
 #!/usr/bin/env python
-import rospy
-import actionlib
+#import rospy
+#import actionlib
 import numpy as np
 import pygame
 import pickle
 import socket
 import time
-from urdf_parser_py.urdf import URDF
-from pykdl_utils.kdl_kinematics import KDLKinematics
+#from urdf_parser_py.urdf import URDF
+#rom pykdl_utils.kdl_kinematics import KDLKinematics
 from collections import deque
-from std_msgs.msg import Float64MultiArray, Float32MultiArray, String
+#from std_msgs.msg import Float64MultiArray, Float32MultiArray, String
 
-from robotiq_2f_gripper_msgs.msg import (
-    CommandRobotiqGripperFeedback, 
-    CommandRobotiqGripperResult, 
-    CommandRobotiqGripperAction, 
-    CommandRobotiqGripperGoal
-)
 
-from robotiq_2f_gripper_control.robotiq_2f_gripper_driver import (
-    Robotiq2FingerGripperDriver as Robotiq
-)
-
-from controller_manager_msgs.srv import (
-    SwitchController, 
-    SwitchControllerRequest, 
-    SwitchControllerResponse,
-    ListControllers,
-    ListControllersRequest,
-    ListControllersResponse
-)
-
-from control_msgs.msg import (
-    FollowJointTrajectoryAction,
-    FollowJointTrajectoryGoal,
-    GripperCommandAction,
-    GripperCommandGoal,
-    GripperCommand
-)
-from trajectory_msgs.msg import (
-    JointTrajectoryPoint
-)
-from sensor_msgs.msg import (
-    JointState
-)
-from geometry_msgs.msg import(
-    TwistStamped,
-    Twist
-)
-
-from waypoints import HOME
+#from waypoints import HOME
 
 # remote teleop imports
 import firebase_admin
 from firebase_admin import db, credentials
 
-cred = credentials.Certificate('pk.json')
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://rsa-remote-op-default-rtdb.firebaseio.com/'})
-ref = db.reference('coords/')
+#cred = credentials.Certificate('pk.json')
+#firebase_admin.initialize_app(cred, {
+ #   'databaseURL': 'https://rsa-remote-op-default-rtdb.firebaseio.com/'})
+#ref = db.reference('coords/')
 
 
+HOME = [0, -np.pi/4, 0, -3*np.pi/4, 0, np.pi/2, np.pi/4]
 STEP_SIZE_L = 0.15
 STEP_SIZE_A = 0.2 * np.pi / 4
 STEP_TIME = 0.01
@@ -241,9 +205,10 @@ def joint2pose(q):
     H7 = np.dot(TransX(np.pi/2, 0.088, 0, 0), RotZ(q[6]))
     H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.2105)
     H = np.linalg.multi_dot([H1, H2, H3, H4, H5, H6, H7, H_panda_hand])
-    return H[:,3][:3]
+    return H[:,3][:3],H
 
 def xdot2qdot(xdot, state):
+    #print(xdot)
     J_pinv = np.linalg.pinv(state["J"])
     return J_pinv @ np.asarray(xdot)
 

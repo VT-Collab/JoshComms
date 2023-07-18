@@ -1,5 +1,5 @@
 # Standard imports
-#import rospy
+
 import sys, time, pickle
 import numpy as np
 import argparse
@@ -12,7 +12,7 @@ from utils_panda import *
 def record_demo(args):
     usernumber = sys.argv[1]
     filename = sys.argv[2]
-    savename = "user/user" + str(usernumber) + "/demos/" + str(filename) + ".pkl"
+    savename  = args.save_loc + "/" + args.user + "/" + args.name + ".pkl"
     print('[*] Connecting to low-level controller...')
     PORT = 8080
     PORT_gripper = 8081
@@ -30,16 +30,19 @@ def record_demo(args):
     scaling_rot =0.2
     steptime = 0.1
     gripper_start = 0
+    
     if gripper_start == 1:
         send2gripper(conn_gripper, "c")
+    else:
+        send2gripper(conn_gripper, "o")
 
-    go2home(conn)
+    #       go2home(conn)
     
 
     print('[*] Main loop...')
     
     state = readState(conn)
-    print('[*] Waiting for start...')
+    
     start_q = np.asarray(state["q"])
     start_pos,start_pose = joint2pose(start_q)
 
@@ -51,7 +54,13 @@ def record_demo(args):
     slow_mode = False
     demo = []
     run_start = False
-
+    start_press = False
+    temp_delay1 = 0
+    temp_delay2 = 0
+    temp_delay3 = 0
+    temp_delay4 = 0
+    gripper_ac = 0
+    print('[*] Waiting for start...')
     while True:
 
         state = readState(conn)
@@ -62,18 +71,18 @@ def record_demo(args):
         #curr_gripper_pos = robotiq_joint_state
 
         axes, gripper, mode, slow, start = joystick.getInput() #tuple(z), A_pressed, B_pressed, X_pressed, stop
-                          
-        if start and not record:
+        #print(axes)
+        if start and abs(curr_time - temp_delay4) > .35:
+            temp_delay4 = time.time()
+            start_press = not start_press
+            print("PROOF THAT ALIENS ARE REAL .... FINALLY!")
+            print(start_press)
+            print(record)
+        if start_press and not record:
             record = True
             start_time = time.time()
             print('[*] Recording the demonstration...')
-        elif start and record:
-            pickle.dump( demo, open( savename, "wb" ) )
-            
-            print("[*] Done!")
-            print("[*] I recorded this many datapoints: ", len(demonstration))
-            print("[*] Saved file at: ", savename)
-            return True
+        
         
         #curr_time = time.time()
         # if record and curr_time - start_time >= steptime:
@@ -81,80 +90,100 @@ def record_demo(args):
         #     start_time = curr_time
         
         # actuate gripper
-        gripper_ac = 0
+        
         xdot_h = [0]*6
         curr_time = time.time()
 
-        if record:
-            if gripper and gripper_ac:
+        # switch between translation and rotation
+        if mode and abs(curr_time - temp_delay1) > .35:
+            trans_mode = not trans_mode
+            temp_delay1 = time.time()
+            #print('trans')
+            # rospy.loginfo("Translation Mode: {}".format(trans_mode))
+            # while mode:
+            #     axes, gripper, mode, slow, start = joystick.getInput()
+        
+        # Toggle speed of robot
+        if slow and abs(curr_time - temp_delay2) > .35:
+            slow_mode = not slow_mode
+            temp_delay2 = time.time()
+        
+            
+            #rospy.loginfo("Slow Mode: {}".format(trans_mode))
+            # while slow:
+            #     axes, gripper, mode, slow, start = joystick.getInput()
+        
+        if slow_mode:
+            scaling_trans = 0.05
+            scaling_rot = 0.1
+            #print("slow")
+            
+        else:
+            scaling_trans = 0.1
+            scaling_rot = 0.2
+            #print("fast")
+        if gripper and abs(curr_time - temp_delay3) > .35:
+#            print("Grippin")
+            temp_delay3 = time.time()
+            if gripper_ac == 1:
                 gripper_ac = 0
                 send2gripper(conn_gripper, "o")
-                time.sleep(0.5)
-            elif gripper and not (gripper_ac):
+                print("open")
+            else:
                 gripper_ac = 1
                 send2gripper(conn_gripper, "c")
-                time.sleep(0.5)
-                # while gripper:
-                #     axes, gripper, mode, slow, start = joystick.getInput()
+                print("close")
+            time.sleep(0.5)
+
+        # Get input velocities for robot            
+        if trans_mode: 
+            xdot_h[:3] = scaling_trans * np.asarray(axes)
+            #print("trans")
+
+        elif not trans_mode:
+            # change coord frame from robotiq gripper to tool flange
+            R = np.mat([[1, 0, 0],
+                        [0, 1, 0],
+                        [0, 0, 1]])
+            P = np.array([0, 0, -0.10])
+            P_hat = np.mat([[0, -P[2], P[1]],
+                            [P[2], 0, -P[0]],
+                            [-P[1], P[0], 0]])
+            #print("Rot")
+            axes = np.array(axes)[np.newaxis]
+            trans_vel = scaling_rot * P_hat * R * axes.T
+            rot_vel = scaling_rot * R * axes.T
+            xdot_h[:3] = np.ravel(trans_vel.T[:])
+            xdot_h[3:] = np.ravel(rot_vel.T[:])
+
         
-            # switch between translation and rotation
-            if mode:
-                trans_mode = not trans_mode
-               # rospy.loginfo("Translation Mode: {}".format(trans_mode))
-                # while mode:
-                #     axes, gripper, mode, slow, start = joystick.getInput()
+
+        # Save waypoint
+        if curr_time - start_time >= step_time:
+            # rospy.loginfo("State : {}".format(curr_pos))
+            data = {}
+            data["start_q"] = start_q
+            data["start_pos"] = start_pos
+            data["start_gripper_pos"] = gripper_start
+            data["curr_q"] = q
+            data["curr_pos"] = curr_pos
+            data["curr_gripper_pos"] = gripper_ac
+            data["trans_mode"] = trans_mode
+            data["slow_mode"] = slow_mode
+            data["xdot_h"] = xdot_h
+            data["gripper_ac"] = gripper_ac
+            demo.append(data)
+            start_time = curr_time
+        if not start_press and record:            
+            pickle.dump( demo, open( savename, "wb" ) )
+    
+            print("[*] Done!")
+            print("[*] I recorded this many datapoints: ", len(demonstration))
+            print("[*] Saved file at: ", savename)
             
-            # Toggle speed of robot
-            if slow:
-                slow_mode = not slow_mode
-                #rospy.loginfo("Slow Mode: {}".format(trans_mode))
-                # while slow:
-                #     axes, gripper, mode, slow, start = joystick.getInput()
+            return True
             
-            if slow_mode:
-                scaling_trans = 0.1
-                scaling_rot = 0.2
-            else:
-                scaling_trans = 0.2
-                scaling_rot = 0.4
 
-            # Get input velocities for robot            
-            if trans_mode: 
-                xdot_h[:3] = scaling_trans * np.asarray(axes)
-
-            elif not trans_mode:
-                # change coord frame from robotiq gripper to tool flange
-                R = np.mat([[1, 0, 0],
-                            [0, 1, 0],
-                            [0, 0, 1]])
-                P = np.array([0, 0, -0.10])
-                P_hat = np.mat([[0, -P[2], P[1]],
-                                [P[2], 0, -P[0]],
-                                [-P[1], P[0], 0]])
-                
-                axes = np.array(axes)[np.newaxis]
-                trans_vel = scaling_rot * P_hat * R * axes.T
-                rot_vel = scaling_rot * R * axes.T
-                xdot_h[:3] = trans_vel.T[:]
-                xdot_h[3:] = rot_vel.T[:]
-
-            # Save waypoint
-            if curr_time - start_time >= step_time:
-                # rospy.loginfo("State : {}".format(curr_pos))
-                data = {}
-                data["start_q"] = start_q
-                data["start_pos"] = start_pos
-                data["start_gripper_pos"] = gripper_start
-                data["curr_q"] = q
-                data["curr_pos"] = curr_pos
-                data["curr_gripper_pos"] = gripper_ac
-                data["trans_mode"] = trans_mode
-                data["slow_mode"] = slow_mode
-                data["xdot_h"] = xdot_h.tolist()
-                data["gripper_ac"] = gripper_ac
-                demo.append(data)
-                start_time = curr_time
-        
         qdot = xdot2qdot(xdot_h, state)
         send2robot(conn, qdot)
 

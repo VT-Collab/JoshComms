@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pickle, random, argparse
 import numpy as np
-import sys, rospy
+import sys , rospy
 from utils import TrajectoryClient, convert_to_6d, deform
 from glob import glob
 from geometry_msgs.msg import Twist
@@ -180,7 +180,7 @@ def train_classifier(args):
                     
                 deformed_trajs.append(snip_plot)
 
-    rospy.loginfo("Real waypoints: {} deformations: {}".format(true_cnt, false_cnt))
+    #rospy.loginfo("Real waypoints: {} deformations: {}".format(true_cnt, false_cnt))
     # save deformations for plotting
     pickle.dump(deformed_trajs, open(data_folder + "/" +"deformed_trajs.pkl", "wb"))
     pickle.dump(dataset, open(data_folder + "/" + savename + ".pkl", "wb"))
