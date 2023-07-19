@@ -4,10 +4,10 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pickle, random, argparse
 import numpy as np
-import sys , rospy
+import sys# , rospy
 from utils import TrajectoryClient, convert_to_6d, deform
 from glob import glob
-from geometry_msgs.msg import Twist
+#from geometry_msgs.msg import Twist
 
 device = "cpu"
 
@@ -81,7 +81,7 @@ def train_classifier(args):
     folders = ["place", "pour", "stir"]
     # only pick requested tasks from list
     folders = folders[:args.n_tasks]
-    rospy.loginfo("Using demos for tasks : {}".format(folders))
+    #rospy.loginfo("Using demos for tasks : {}".format(folders))
 
     data_folder = 'data'
     model_folder = 'models'
@@ -93,7 +93,7 @@ def train_classifier(args):
     deformed_trajs = []
 
     for folder in folders:
-        rospy.loginfo("Generating deformations for task : {}".format(folder))
+        #rospy.loginfo("Generating deformations for task : {}".format(folder))
         demos = glob(parent_folder + "/" + folder + "/*.pkl")
         for filename in demos:
             demo = pickle.load(open(filename, "rb"))
@@ -166,7 +166,7 @@ def train_classifier(args):
                     pos_twist.angular.y = snip_deformed[snip_idx, 4]
                     pos_twist.angular.z = snip_deformed[snip_idx, 5]
 
-                    snip_deformed_joint = mover.pose2joint(pos_twist, guess=traj[snip_idx])
+                    snip_deformed_joint = mover.sjoint(pos_twist, guess=traj[snip_idx])
                     # valid inverse not found. Ignore waypoint
                     if snip_deformed_joint is None:
                         continue

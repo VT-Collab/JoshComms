@@ -65,8 +65,8 @@ def record_demo(args):
 
         state = readState(conn)
         q = state["q"].tolist()
-        curr_pos,curr_pose = joint2pose(state["q"])
-        
+        #curr_position,curr_pose = joint2pose(state["q"])
+        curr_pos = state["x"]
         
         #curr_gripper_pos = robotiq_joint_state
 

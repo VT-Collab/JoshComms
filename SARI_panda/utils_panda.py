@@ -14,9 +14,9 @@ from collections import deque
 
 #from waypoints import HOME
 
-# remote teleop imports
-import firebase_admin
-from firebase_admin import db, credentials
+# # remote teleop imports
+# import firebase_admin
+# from firebase_admin import db, credentials
 
 #cred = credentials.Certificate('pk.json')
 #firebase_admin.initialize_app(cred, {
@@ -264,4 +264,42 @@ def go2home(conn):
         return True
     elif elapsed_time >= total_time:
         return False
+def deform(xi, start, length, tau):
+    # length += np.random.choice(np.arange(30, length))
+    xi1 = np.asarray(xi).copy()
+    A = np.zeros((length+2, length))
+    for idx in range(length):
+        A[idx, idx] = 1
+        A[idx+1,idx] = -2
+        A[idx+2,idx] = 1
+    R = np.linalg.inv(np.dot(A.T, A))
+    U = np.zeros(length)
+    gamma = np.zeros((length, 6))
+    for idx in range(6):
+        U[0] = tau[idx]
+        gamma[:,idx] = np.dot(R, U)
+    end = min([start+length, xi1.shape[0]-1])
+    xi1[start:end+1,:] += gamma[0:end-start+1,:]
+    return xi1
 
+def get_rotation_mat(euler):
+    
+    R_x = np.mat([[1, 0, 0],
+                  [0, np.cos(euler[0]), -np.sin(euler[0])],
+                  [0, np.sin(euler[0]), np.cos(euler[0])]])
+
+    R_y = np.mat([[np.cos(euler[1]), 0, np.sin(euler[1])],
+                  [0, 1, 0],
+                  [-np.sin(euler[1]), 0, np.cos([1])]])
+
+    R_z = np.mat([[np.cos(euler[2]), -np.sin(euler[2]), 0],
+                  [np.sin(euler[2]), np.cos(euler[2]), 0],
+                  [0, 0, 1]])
+    R = R_x * R_y * R_z
+    return R
+
+def convert_to_6d(pos):
+    pos_awrap = np.zeros(9)
+    pos_awrap[:3] = pos[:3]
+    pos_awrap[3:] = get_rotation_mat(pos[3:]).flatten('F')[0,:6]
+    return pos_awrap

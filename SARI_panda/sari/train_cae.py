@@ -5,10 +5,11 @@ from torch.utils.data import Dataset, DataLoader
 import pickle
 import numpy as np
 import sys
-import rospy, argparse
+import argparse
 from glob import glob
-from utils import TrajectoryClient, convert_to_6d
-from geometry_msgs.msg import Twist
+from utils_panda import convert_to_6d
+from panda_env2 import Panda
+#from geometry_msgs.msg import Twist
 
 np.set_printoptions(precision=2, suppress=True)
 
@@ -85,12 +86,12 @@ class CAE(nn.Module):
         return self.loss_func(action_decoded[:,:3], action_target[:,:3]) + .9 * self.loss_func(action_decoded[:,3:], action_target[:,3:])
 
 def train_cae(args):
-    mover = TrajectoryClient()
+    panda = Panda()
 
     parent_folder = 'demos'
-    folders = ["place", "pour", "stir"]
-    folders = folders[:args.n_tasks]
-    rospy.loginfo("Using demos for tasks : {}".format(folders))
+    folders = ["forktest"]
+    #folders = folders[:args.n_tasks]
+    #rospy.loginfo("Using demos for tasks : {}".format(folders))
 
     data_folder = "data"
     model_folder = "models"
@@ -131,15 +132,15 @@ def train_cae(args):
                 noise_pos = curr_pos.copy() + np.random.normal(0, noiselevel, len(curr_pos))
                 
                 # convert to twist for kdl_kin
-                noise_pos_twist = Twist()
-                noise_pos_twist.linear.x = noise_pos[0]
-                noise_pos_twist.linear.y = noise_pos[1]
-                noise_pos_twist.linear.z = noise_pos[2]
-                noise_pos_twist.angular.x = noise_pos[3]
-                noise_pos_twist.angular.y = noise_pos[4]
-                noise_pos_twist.angular.z = noise_pos[5]
+                #noise_pos_twist = Twist()
+                # noise_pos_twist.linear.x = noise_pos[0]
+                # noise_pos_twist.linear.y = noise_pos[1]
+                # noise_pos_twist.linear.z = noise_pos[2]
+                # noise_pos_twist.angular.x = noise_pos[3]
+                # noise_pos_twist.angular.y = noise_pos[4]
+                # noise_pos_twist.angular.z = noise_pos[5]
 
-                noise_q = np.array(mover.pose2joint(noise_pos_twist, guess=curr_q))
+                noise_q = np.array(panda.pose2joint(noise_pos))
 
                 if None in noise_q:
                     inverse_fails += 1
@@ -158,8 +159,8 @@ def train_cae(args):
                             + curr_trans_mode + curr_slow_mode
                 dataset.append((history, state, action.tolist()))
 
-    if inverse_fails > 0:
-        rospy.loginfo("Failed inverses: {}".format(inverse_fails))
+    # if inverse_fails > 0:
+    #     rospy.loginfo("Failed inverses: {}".format(inverse_fails))
 
     pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
 
@@ -184,11 +185,11 @@ def train_cae(args):
             loss.backward()
             optimizer.step()
         scheduler.step()
-        rospy.loginfo("epoch: {} loss: {}".format(epoch, loss.item()))
+        #rospy.loginfo("epoch: {} loss: {}".format(epoch, loss.item()))
         torch.save(model.state_dict(), model_folder + "/" + savename)
 
 def main():
-    rospy.init_node("train_cae")
+    #rospy.init_node("train_cae")
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-tasks", type=int, help="number of tasks to use", default=1)
     parser.add_argument("--lookahead", type=int, help="lookahead to compute robot action", default=5)
@@ -199,7 +200,6 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except rospy.ROSInterruptException:
-        pass
+    main()
+    # except rospy.ROSInterruptException:
+    #     pass

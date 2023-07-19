@@ -10,6 +10,7 @@ class Panda():
         self.urdfRootPath = pybullet_data.getDataPath()
         self.panda = p.loadURDF(os.path.join(self.urdfRootPath,"franka_panda/panda.urdf"),
                 useFixedBase=True, basePosition=basePosition)
+    
 
     def reset(self):
         init_pos = [0.0, -np.pi/4, 0.0, -3*np.pi/4, 0.0, np.pi/2, np.pi/4, 0.0, 0.0, 0.05, 0.05]
