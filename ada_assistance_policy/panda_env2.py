@@ -2,8 +2,7 @@ import os
 import numpy as np
 import pybullet as p
 import pybullet_data
-from Utils import joint2pose
-
+from utils_panda import joint2pose
 
 class Panda():
 
@@ -11,6 +10,9 @@ class Panda():
         self.urdfRootPath = pybullet_data.getDataPath()
         self.panda = p.loadURDF(os.path.join(self.urdfRootPath,"franka_panda/panda.urdf"),useFixedBase=True,basePosition=basePosition)
         self.reset()
+        #self.limit_low = [-2.60752, -1.58650, -2.60752, -2.764601, -2.607521, -0.015707, -2.60752]
+        #self.limit_high = [2.60752, 1.58650, 2.60752, -0.062831, 2.60752, 3.37721, 2.60752]
+        
 
     """functions that environment should use"""
 
@@ -106,3 +108,5 @@ class Panda():
             gripper_position = [0.05, 0.05]
         p.setJointMotorControlArray(self.panda, range(9), p.VELOCITY_CONTROL, targetVelocities=list(q_dot))
         p.setJointMotorControlArray(self.panda, [9,10], p.POSITION_CONTROL, targetPositions=gripper_position)
+    
+    

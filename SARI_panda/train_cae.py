@@ -7,7 +7,7 @@ import numpy as np
 import sys
 import argparse
 from glob import glob
-from utils_panda2 import convert_to_6d
+from utils_panda import convert_to_6d
 from panda_env3 import Panda
 #from geometry_msgs.msg import Twist
 

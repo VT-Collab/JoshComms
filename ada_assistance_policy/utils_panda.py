@@ -106,7 +106,7 @@ class Joystick(object):
 class RemoteClient(object):
 
     def __init__(self):
-        #self.firebase_sub = rospy.Subscriber('/remote_cmd', Float32MultiArray, self.firebase_cb)
+        self.firebase_sub = rospy.Subscriber('/remote_cmd', Float32MultiArray, self.firebase_cb)
         self.axes = []
         self.mode = 0
         self.slow = 0
@@ -307,7 +307,6 @@ def get_rotation_mat(euler):
 def convert_to_6d(pos):
     pos_awrap = np.zeros(9)
     pos_awrap[:3] = pos[:3]
-    print(pos[3:])
     pos_awrap[3:] = get_rotation_mat(pos[3:]).flatten('F')[0,:6]
     return pos_awrap
 

@@ -5,8 +5,8 @@ from torch.utils.data import Dataset, DataLoader
 import pickle, random, argparse
 import numpy as np
 import sys# , rospy
-from utils import TrajectoryClient, convert_to_6d, deform
-from glob import glob
+from utils_panda import convert_to_6d,deform
+from panda_env2 import Panda
 #from geometry_msgs.msg import Twist
 
 device = "cpu"
@@ -75,17 +75,22 @@ class Net(nn.Module):
         return self.loss_func(output, target)
 
 def train_classifier(args):
-    mover = TrajectoryClient()
+    panda = Panda()
 
     parent_folder = 'demos'
-    folders = ["place", "pour", "stir"]
-    # only pick requested tasks from list
-    folders = folders[:args.n_tasks]
-    #rospy.loginfo("Using demos for tasks : {}".format(folders))
+    folders = ["forktest"]
 
-    data_folder = 'data'
-    model_folder = 'models'
-    savename = 'class_' + "_".join(folders)
+    data_folder = "data"
+    model_folder = "models"
+    savename = 'cae_' + "_".join(folders)
+    #pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
+    #lookahead = args.lookahead#5
+    #noiselevel = args.noiselevel#0.0005
+    #noisesamples = args.noisesamples#5
+    dataset = []
+    demos = []
+    folder = "forktest"
+    demos = [(parent_folder + "/" + folder + "/" +folder+"_1"+ ".pkl")]
     
     true_cnt = 0
     false_cnt = 0
@@ -94,7 +99,7 @@ def train_classifier(args):
 
     for folder in folders:
         #rospy.loginfo("Generating deformations for task : {}".format(folder))
-        demos = glob(parent_folder + "/" + folder + "/*.pkl")
+        #demos = glob(parent_folder + "/" + folder + "/*.pkl")
         for filename in demos:
             demo = pickle.load(open(filename, "rb"))
 
@@ -157,16 +162,17 @@ def train_classifier(args):
                 snip_plot = np.array(traj_pos)[:1, :]
 
                 for snip_idx in range(len(snip_deformed)):
-                    # convert to twist msg for kdl_kin
-                    pos_twist = Twist()
-                    pos_twist.linear.x = snip_deformed[snip_idx, 0]
-                    pos_twist.linear.y = snip_deformed[snip_idx, 1]
-                    pos_twist.linear.z = snip_deformed[snip_idx, 2]
-                    pos_twist.angular.x = snip_deformed[snip_idx, 3]
-                    pos_twist.angular.y = snip_deformed[snip_idx, 4]
-                    pos_twist.angular.z = snip_deformed[snip_idx, 5]
+                    # # convert to twist msg for kdl_kin
+                    # pos_twist = Twist()
+                    # pos_twist.linear.x = snip_deformed[snip_idx, 0]
+                    # pos_twist.linear.y = snip_deformed[snip_idx, 1]
+                    # pos_twist.linear.z = snip_deformed[snip_idx, 2]
+                    # pos_twist.angular.x = snip_deformed[snip_idx, 3]
+                    # pos_twist.angular.y = snip_deformed[snip_idx, 4]
+                    # pos_twist.angular.z = snip_deformed[snip_idx, 5]
+                    pos_twist = snip_deformed[snip_idx]
 
-                    snip_deformed_joint = mover.sjoint(pos_twist, guess=traj[snip_idx])
+                    snip_deformed_joint = np.array(panda.pose2joint(pos_twist))
                     # valid inverse not found. Ignore waypoint
                     if snip_deformed_joint is None:
                         continue
@@ -228,14 +234,14 @@ def train_classifier(args):
             optimizer.step()
 
         scheduler.step()
-        rospy.loginfo("epoch: {} loss: {}".format(epoch, loss.item()))
+        #rospy.loginfo("epoch: {} loss: {}".format(epoch, loss.item()))
         torch.save(model.state_dict(), model_folder + "/" + savename)
 
     pickle.dump(plot_data, open(data_folder + "/" + "plot_data.pkl", "wb"))
     
 
 def main():
-    rospy.init_node("train_class")
+    #rospy.init_node("train_class")
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-tasks", type=int, help="number of tasks to use", default=1)
     parser.add_argument("--deforms", type=int, help="number of deformations per demo", default=1)

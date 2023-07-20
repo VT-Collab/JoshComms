@@ -96,18 +96,21 @@ def train_cae(args):
     data_folder = "data"
     model_folder = "models"
     savename = 'cae_' + "_".join(folders)
-
+    #pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
     lookahead = args.lookahead#5
     noiselevel = args.noiselevel#0.0005
     noisesamples = args.noisesamples#5
     dataset = []
     demos = []
-
-    for folder in folders:
-        demos += glob(parent_folder + "/" + folder + "/*.pkl")
-
+    folder = "forktest"
+    demos = [(parent_folder + "/" + folder + "/" +folder+"_1"+ ".pkl")]
+    #print("DEEEEEEEMMMMMMMMMMMMMMOOON",(parent_folder + "/" + folder + "/*.pkl"))
+    # for folder in folders:
+    #     demos += glob(parent_folder + "/" + folder + "/*.pkl")
+    
     inverse_fails = 0
     for filename in demos:
+        print("Workin",demos,filename)
         demo = pickle.load(open(filename, "rb"))
         n_states = len(demo)
 
@@ -126,7 +129,7 @@ def train_cae(args):
             next_pos = np.asarray(demo[idx+lookahead]["curr_pos"])
             next_q = np.asarray(demo[idx+lookahead]["curr_q"])
             next_gripper_pos = [demo[idx+lookahead]["curr_gripper_pos"]]
-
+            print(noisesamples)
             for _ in range(noisesamples):
                 # add noise in cart space
                 noise_pos = curr_pos.copy() + np.random.normal(0, noiselevel, len(curr_pos))
@@ -158,6 +161,7 @@ def train_cae(args):
                 state = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode
                 dataset.append((history, state, action.tolist()))
+                print("DATA",dataset)
 
     # if inverse_fails > 0:
     #     rospy.loginfo("Failed inverses: {}".format(inverse_fails))
@@ -171,8 +175,9 @@ def train_cae(args):
     LR = 0.0001
     LR_STEP_SIZE = 400
     LR_GAMMA = 0.15
-
+    
     train_data = MotionData(dataset)
+    
     train_set = DataLoader(dataset=train_data, batch_size=BATCH_SIZE_TRAIN, shuffle=True)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)

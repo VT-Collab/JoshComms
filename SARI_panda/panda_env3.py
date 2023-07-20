@@ -6,20 +6,8 @@ from utils_panda import joint2pose,get_quaternion_from_euler
 
 class Panda():
 
-    def __init__(self, basePosition=[0,0,0], visualize=False):
+    def __init__(self, basePosition=[0,0,0]):
         self.urdfRootPath = pybullet_data.getDataPath()
-        
-        if visualize:
-            p.connect(p.GUI)
-        else:
-            p.connect(p.DIRECT)
-        #p.setGravity(0, 0, -9.81)
-        # set up camera
-        p.setGravity(0, 0, -9.81)
-        self._set_camera()
-        # load some scene objects
-        p.loadURDF(os.path.join(self.urdfRootPath, "plane.urdf"), basePosition=[0, 0, -0.65])
-        p.loadURDF(os.path.join(self.urdfRootPath, "table/table.urdf"), basePosition=[0.5, 0, -0.65])
         self.panda = p.loadURDF(os.path.join(self.urdfRootPath,"franka_panda/panda.urdf"),useFixedBase=True,basePosition=basePosition)
         self.reset()
         #self.limit_low = [-2.60752, -1.58650, -2.60752, -2.764601, -2.607521, -0.015707, -2.60752]
@@ -120,25 +108,5 @@ class Panda():
             gripper_position = [0.05, 0.05]
         p.setJointMotorControlArray(self.panda, range(9), p.VELOCITY_CONTROL, targetVelocities=list(q_dot))
         p.setJointMotorControlArray(self.panda, [9,10], p.POSITION_CONTROL, targetPositions=gripper_position)
-    def _set_camera(self):
-        self.camera_width = 256
-        self.camera_height = 256
-        p.resetDebugVisualizerCamera(cameraDistance=1.2, cameraYaw=30, cameraPitch=-60,
-                                     cameraTargetPosition=[0.5, -0.2, 0.0])
-        self.view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0.5, 0, 0],
-                                                               distance=1.0,
-                                                               yaw=90,
-                                                               pitch=-50,
-                                                               roll=0,
-                                                               upAxisIndex=2)
-        self.proj_matrix = p.computeProjectionMatrixFOV(fov=60,
-                                                        aspect=float(self.camera_width) / self.camera_height,
-                                                        nearVal=0.1,
-                                                        farVal=100.0)
-    def pose2joint(self,pose):
-        quat = get_quaternion_from_euler(pose[3], pose[4], pose[5])
-        pos = pose[:3]
-        # if guess is None:
-        #     guess = self.joint_states
-        q = self._inverse_kinematics( pos, quat)
-        return q
+    
+    
