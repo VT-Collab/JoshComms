@@ -180,6 +180,16 @@ def listen2robot(conn):
 	state["x"] = np.array(xyz)
 	return state
 
+def send2gripper(conn, arg):
+    # print('-----function called')
+    send_msg = arg
+    conn.send(send_msg.encode())
+
+def connect2gripper(PORT):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(('172.16.0.3', PORT))
+
 def readState(conn):
     while True:
         state = listen2robot(conn)
