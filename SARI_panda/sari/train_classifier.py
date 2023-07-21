@@ -17,23 +17,27 @@ np.set_printoptions(precision=2, suppress=True)
 class MotionData(Dataset):
 
     def __init__(self, x, y):
-        self.data = x
-        self.target = y
-
+        
+        self.data = x #this is all len 16
+        self.target = np.array(y,dtype=int)
+        
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        item = self.data[idx]
-        snippet = torch.FloatTensor(item)
-        label = torch.LongTensor(self.target[idx])
+        #item = self.data[idx]
+
+        snippet = torch.FloatTensor(self.data[idx])
+
+        label = torch.LongTensor((self.target[idx]))
         return (snippet, label)
 
 class Net(nn.Module):
 
-    def __init__(self, d_layers=[30, 40, 20, 10], d_in=15, d_out=2):
-        super(Net, self).__init__()
+    def __init__(self, d_layers=[30, 40, 20, 10], d_in=16, d_out=2):
 
+        super(Net, self).__init__()
+        #
         # self.loss_func = nn.CrossEntropyLoss(weight = torch.Tensor([1., 2.]))
         self.loss_func = nn.CrossEntropyLoss()
 
@@ -50,11 +54,15 @@ class Net(nn.Module):
         self.fcn.append(nn.Linear(d_layers[-1], d_out))
 
     def classify(self, x):
+
         # save outputs from individual layers
         self.layer_outputs = []
+        
         out = x
         for i, l in enumerate(self.fcn):
+
             out = l(out)
+            
             if i == len(self.fcn) - 1:
                 self.y_pred = out
                 break
@@ -128,7 +136,6 @@ def train_classifier(args):
                 # class 0 for real states
                 dataset.append([state, [0]])
                 true_cnt += 1
-
             traj = np.array(traj)
             traj_pos = np.array(traj_pos)
 
@@ -173,6 +180,7 @@ def train_classifier(args):
                     pos_twist = snip_deformed[snip_idx]
 
                     snip_deformed_joint = np.array(panda.pose2joint(pos_twist))
+                    snip_deformed_joint = snip_deformed_joint[:7]
                     # valid inverse not found. Ignore waypoint
                     if snip_deformed_joint is None:
                         continue
@@ -183,9 +191,7 @@ def train_classifier(args):
                     state = snip_deformed_joint.tolist() + curr_pos_awrap.tolist()
                     dataset.append([state, [1.]])
                     false_cnt += 1
-                    
                 deformed_trajs.append(snip_plot)
-
     #rospy.loginfo("Real waypoints: {} deformations: {}".format(true_cnt, false_cnt))
     # save deformations for plotting
     pickle.dump(deformed_trajs, open(data_folder + "/" +"deformed_trajs.pkl", "wb"))
@@ -194,19 +200,23 @@ def train_classifier(args):
     model = Net().to(device)
 
     # Shuffle dataset
+
+
     dataset = random.sample(dataset, len(dataset))
+
     inputs = [element[0] for element in dataset]
     targets = [element[1] for element in dataset]
 
     # Training parameters
-    EPOCH = 45
+    EPOCH = 100
     # BATCH_SIZE_TRAIN = int(train_data.__len__() / 5.)
-    BATCH_SIZE_TRAIN = 1
+    BATCH_SIZE_TRAIN = 2
     LR = 0.0001
     LR_STEP_SIZE = 200
     LR_GAMMA = 0.1
 
     train_data = MotionData(inputs, targets)
+
     train_set = DataLoader(dataset=train_data, batch_size=BATCH_SIZE_TRAIN, shuffle=True)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -215,9 +225,11 @@ def train_classifier(args):
     plot_data = []
 
     for epoch in range(EPOCH):
+        print("EPOCH:",epoch)
         for batch, x in enumerate(train_set):
-
+            
             optimizer.zero_grad()
+
             loss = model(x)
 
             # save data for plotting

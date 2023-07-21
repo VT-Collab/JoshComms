@@ -42,7 +42,7 @@ class CAE(nn.Module):
 
         # Encoder
         self.enc = nn.Sequential(
-            nn.Linear(18, 30),
+            nn.Linear(21, 30),
             nn.Tanh(),
             nn.Linear(30, 40),
             nn.Tanh(),
@@ -55,7 +55,7 @@ class CAE(nn.Module):
 
         # Policy
         self.dec = nn.Sequential(
-            nn.Linear(58, 40),
+            nn.Linear(61, 40),
             nn.Tanh(),
             nn.Linear(40, 30),
             nn.Tanh(),
@@ -110,7 +110,7 @@ def train_cae(args):
     
     inverse_fails = 0
     for filename in demos:
-        print("Workin",demos,filename)
+        #print("Workin",demos,filename)
         demo = pickle.load(open(filename, "rb"))
         n_states = len(demo)
 
@@ -129,7 +129,7 @@ def train_cae(args):
             next_pos = np.asarray(demo[idx+lookahead]["curr_pos"])
             next_q = np.asarray(demo[idx+lookahead]["curr_q"])
             next_gripper_pos = [demo[idx+lookahead]["curr_gripper_pos"]]
-            print(noisesamples)
+            #print(noisesamples)
             for _ in range(noisesamples):
                 # add noise in cart space
                 noise_pos = curr_pos.copy() + np.random.normal(0, noiselevel, len(curr_pos))
@@ -156,34 +156,48 @@ def train_cae(args):
                 action = next_pos - noise_pos
 
                 # history = noise_q + noise_pos + curr_gripper_pos + trans_mode + slow_mode
+                
                 history = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode
                 state = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode
                 dataset.append((history, state, action.tolist()))
-                print("DATA",dataset)
+                #print("DATA",dataset)
 
     # if inverse_fails > 0:
     #     rospy.loginfo("Failed inverses: {}".format(inverse_fails))
 
     pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
+    # ace = dataset[0]
+    # one = ace[0]
+    # print(np.shape(one))
+    # ace = dataset[1]
+    # two = ace[1]
+    # print(np.shape(two))
+    # ace = dataset[2]
+    # three = ace[2]
+    # print(np.shape(three))
+
+    
 
     model = CAE().to(device)
+    train_data = MotionData(dataset)
 
-    EPOCH = 50
+    EPOCH = 100
     BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     LR = 0.0001
     LR_STEP_SIZE = 400
     LR_GAMMA = 0.15
     
-    train_data = MotionData(dataset)
     
+    #print((train_data.__len__()))
     train_set = DataLoader(dataset=train_data, batch_size=BATCH_SIZE_TRAIN, shuffle=True)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=LR_STEP_SIZE, gamma=LR_GAMMA)
 
     for epoch in range(EPOCH):
+        print("EPOCH:",epoch)
         for batch, x in enumerate(train_set):
             optimizer.zero_grad()
             loss = model(x)
