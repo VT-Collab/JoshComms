@@ -12,9 +12,9 @@ np.set_printoptions(precision=2, suppress=True)
 """ TODO
 - Add event logging
 """
- 
-def run_test(args):
 
+
+def run_test(args):
     mover = TrajectoryClient()
     joystick = JoystickControl()
 
@@ -50,20 +50,19 @@ def run_test(args):
     trans_mode = True
     slow_mode = False
     traj = []
-    
+
     assist = False
     assist_start = 1.0
 
     run_start = False
-    
+
     folder = "./user_data/user" + str(args.user)
     abs_path = os.path.abspath(folder)
     if not os.path.exists(abs_path):
         os.makedirs(abs_path)
 
-    savename = folder + "/" + args.filename + "_" + str(args.run_num) + ".pkl" 
+    savename = folder + "/" + args.filename + "_" + str(args.run_num) + ".pkl"
     while not rospy.is_shutdown():
-
         q = np.asarray(mover.joint_states).tolist()
         curr_pos = mover.joint2pose()
         curr_gripper_pos = mover.robotiq_joint_state
@@ -75,57 +74,55 @@ def run_test(args):
             axes, gripper, mode, slow, start = joystick.getInput()
             start_time = time.time()
             assist_time = time.time()
-        
+
         if not run_start:
             rospy.loginfo("Start received")
             run_start = True
 
         if start:
             pickle.dump(traj, open(savename, "wb"))
-            rospy.loginfo("Collected {} datapoints and saved at {}".format(len(traj), savename))
-            mover.switch_controller(mode='position')
+            rospy.loginfo(
+                "Collected {} datapoints and saved at {}".format(len(traj), savename)
+            )
+            mover.switch_controller(mode="position")
             mover.send_joint(q, 1.0)
             return 1
-            
+
         # switch between translation and rotation
         if mode:
             trans_mode = not trans_mode
             rospy.loginfo("Translation Mode: {}".format(trans_mode))
             while mode:
                 axes, gripper, mode, slow, start = joystick.getInput()
-        
+
         # Toggle speed of robot
         if slow:
             slow_mode = not slow_mode
             rospy.loginfo("Slow Mode: {}".format(trans_mode))
             while slow:
                 axes, gripper, mode, slow, start = joystick.getInput()
-        
+
         if slow_mode:
             scaling_trans = 0.1
             scaling_rot = 0.2
         else:
             scaling_trans = 0.2
             scaling_rot = 0.4
-            
+
         xdot_h = np.zeros(6)
-        if trans_mode: 
+        if trans_mode:
             xdot_h[:3] = scaling_trans * np.asarray(axes)
         elif not trans_mode:
-            R = np.mat([[1, 0, 0],
-                        [0, 1, 0],
-                        [0, 0, 1]])
+            R = np.mat([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
             P = np.array([0, 0, -0.10])
-            P_hat = np.mat([[0, -P[2], P[1]],
-                            [P[2], 0, -P[0]],
-                            [-P[1], P[0], 0]])
-            
+            P_hat = np.mat([[0, -P[2], P[1]], [P[2], 0, -P[0]], [-P[1], P[0], 0]])
+
             axes = np.array(axes)[np.newaxis]
             trans_vel = scaling_rot * P_hat * R * axes.T
             rot_vel = scaling_rot * R * axes.T
             xdot_h[:3] = trans_vel.T[:]
             xdot_h[3:] = rot_vel.T[:]
-            
+
         qdot_h = mover.xdot2qdot(xdot_h)
         qdot_h = qdot_h.tolist()[0]
 
@@ -133,7 +130,7 @@ def run_test(args):
 
         gripper_ac = 0
         if gripper and (mover.robotiq_joint_state > 0):
-            mover.actuate_gripper(gripper_ac, 1, 0.)
+            mover.actuate_gripper(gripper_ac, 1, 0.0)
             while gripper:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
@@ -154,19 +151,19 @@ def run_test(args):
 
         alpha, a_robot = model.get_params(data)
         xdot_r = [0] * 6
-        if trans_mode: 
+        if trans_mode:
             xdot_r[:3] = a_robot[:3]
         elif not trans_mode:
             xdot_r[3:] = a_robot[3:]
 
         data["alpha"] = alpha
         data["a_human"] = xdot_h.tolist()
-        data["a_robot"] = xdot_r#.tolist()
+        data["a_robot"] = xdot_r  # .tolist()
 
         xdot_r = mover.xdot2qdot(xdot_r)
-        qdot_r = 2. * xdot_r
+        qdot_r = 2.0 * xdot_r
         qdot_r = qdot_r.tolist()[0]
-        
+
         curr_time = time.time()
         if curr_time - assist_time >= assist_start and not assist:
             rospy.loginfo("Assistance started")
@@ -176,12 +173,12 @@ def run_test(args):
             # sac method uses an interval between assistance times
             # if args.method != "ours" :
 
-            qdot = (alpha * 1.0 * np.asarray(qdot_r) + (1-alpha) * np.asarray(qdot_h))
+            qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(qdot_h)
             # qdot = np.clip(qdot, -0.3, 0.3)
             qdot = qdot.tolist()
         else:
             qdot = qdot_h
-        
+
         data["curr_time"] = curr_time
         data["assist"] = assist
         mover.send(qdot)
@@ -189,24 +186,46 @@ def run_test(args):
         if curr_time - start_time >= step_time:
             traj.append(data)
             start_time = curr_time
-        
+
         rate.sleep()
+
 
 def main():
     rospy.init_node("run")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n-intents", type=int, help="Number of intents for the model for the robot (default: 1)", default=1)
-    parser.add_argument("--user", type=int, help="User number for data collections (default: 0)", default=0)
-    parser.add_argument("--filename", type=str, help="Savename for data (default:test)", default="test")
-    parser.add_argument("--run-num", type=int, help="run number to save data (default:0)", default=0)
-    parser.add_argument("--method", type=str, choices=["sari", "casa"], help="method to use (default:ours)", default="ours")
+    parser.add_argument(
+        "--n-intents",
+        type=int,
+        help="Number of intents for the model for the robot (default: 1)",
+        default=1,
+    )
+    parser.add_argument(
+        "--user",
+        type=int,
+        help="User number for data collections (default: 0)",
+        default=0,
+    )
+    parser.add_argument(
+        "--filename", type=str, help="Savename for data (default:test)", default="test"
+    )
+    parser.add_argument(
+        "--run-num", type=int, help="run number to save data (default:0)", default=0
+    )
+    parser.add_argument(
+        "--method",
+        type=str,
+        choices=["sari"],
+        help="method to use (default:sari)",
+        default="sari",
+    )
     args = parser.parse_args()
     rospy.loginfo(args)
     run_test(args)
+
 
 if __name__ == "__main__":
     try:
         main()
     except rospy.ROSInterruptException:
-        pass 
+        pass
