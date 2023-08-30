@@ -37,7 +37,7 @@ class AssistancePolicyOneGoal:
     return self.target_assist_policies[self.min_val_ind].get_qvalue()
 
   def get_action(self):
-    values = [targ_policy.get_value() for targ_policy in self.target_assist_policies] #get action value dependent on linear and rotational distance to robot
+    values = [targ_policy.get_qvalue() for targ_policy in self.target_assist_policies] #get action value dependent on linear and rotational distance to robot
     min_val_ind = np.argmin(values) #get min distance move choice
     return self.target_assist_policies[min_val_ind].get_action() #pick smallest action
 

@@ -7,6 +7,7 @@ from AdaHandler2 import *
 from Utils import *
 from AdaAssistancePolicy import *
 from UserBot import *
+from tkinter import *
 
 def listen2comms(PORT):
     
@@ -44,7 +45,22 @@ def send2comms(conn, msg, limit=1.0):
     #send_msg = "s," + send_msg + ","
     conn.send(send_msg.encode())
 
+class GUI_Interface(object):
+    def __init__(self):
+        self.root = Tk()
+        self.root.geometry("+100+100")
+        self.root.title("Uncertainity Output")
+        self.update_time = 0.02
+        self.fg = '#ff0000'
+        font = "Palatino Linotype"
 
+        # X_Y Uncertainty
+        self.myLabel1 = Label(self.root, text = "Confidence", font=(font, 40))
+        self.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
+        self.textbox1 = Entry(self.root, width = 5, bg = "white", fg=self.fg, borderwidth = 3, font=(font, 40))
+        self.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
+        self.textbox1.insert(0,0)
+                
 def main():
 
     print("initializing test environment")
@@ -69,6 +85,18 @@ def main():
     run_time =5 #how long each run should go for
     #Make first trajectory
     qdot = [0]*7
+    perc_cutoff = .4
+
+    #
+    MaxConf = 0.00
+    GUI_1 = GUI_Interface()
+    GUI_1.textbox1.delete(0, END)
+    GUI_1.textbox1.insert(0, round(MaxConf, 2))
+    GUI_1.root.geometry("+100+100")
+    GUI_1.myLabel1 = Label(GUI_1.root, text = "Confidence", font=("Palatino Linotype", 40))
+    GUI_1.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
+    GUI_1.root.update()
+
     print("Full Cycle")
     while True:
         msg = str(s.recv(2048))[2:-2]
@@ -77,21 +105,32 @@ def main():
             #reset panda to transmitted position
             env.panda.reset((state_str))
             ada_handler.robot_policy.update(env.panda.state, qdot,env.panda)
-
+            goal_distribution = ada_handler.robot_policy.goal_predictor.get_distribution()
+            
+            goal_distribution_sorted = np.sort(goal_distribution)
+            MaxConf = goal_distribution_sorted[-1]
             b = time.time()
             a = time.time()
-            
-            #While time running < 5s, run update loop of blending. 
-            while(abs(a-b)<run_time):
-                a = time.time()
-                #update internal handler policy and retrieve action
-                ada_handler.robot_policy.update(env.panda.state, qdot,env.panda)
-                action = ada_handler.robot_policy.get_action()
-                #step the panda environment
-                env.step(joint = action,mode = 0)
-            while(abs(a-b)<(run_time+2)):
-                a = time.time()
-            print("DONE A RUN")
+            if (MaxConf-goal_distribution_sorted[-2] > perc_cutoff):
+                #Gui
+                GUI_1.textbox1.delete(0, END)
+                GUI_1.textbox1.insert(0, round(MaxConf, 1))
+                GUI_1.root.update()
+                #While time running < 5s, run update loop of blending. 
+                while(abs(a-b)<run_time):
+                    a = time.time()
+                    #update internal handler policy and retrieve action
+                    ada_handler.robot_policy.update(env.panda.state, qdot,env.panda)
+                    action = ada_handler.robot_policy.get_blend_action()
+                    #step the panda environment
+                    env.step(joint = action,mode = 0)
+                while(abs(a-b)<(run_time+2)):
+                    a = time.time()
+                print("DONE A RUN")
+            else:
+                GUI_1.textbox1.delete(0, END)
+                GUI_1.textbox1.insert(0, round(MaxConf, 1))
+                GUI_1.root.update()
 
 
             #Then do pull in next reset input and wait until time run > 7s

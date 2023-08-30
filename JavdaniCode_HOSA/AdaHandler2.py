@@ -87,7 +87,7 @@ class AdaHandler:
   #    end_effector_trans = self.GetEndEffectorTransform()
   #    return self.robot_policy.get_action(goal_distribution, end_effector_trans)
 
-    def execute_policy(self, direct_teleop_only=False, blend_only=False, fix_magnitude_user_command=False,  finish_trial_func=None, traj_data_recording=None):
+    def execute_policy(self, direct_teleop_only=False, blend_only=False, fix_magnitude_user_command=False, w_comms = True):
         #goal_distribution = np.array([0.333, 0.333, 0.333])
         print('[*] Connecting to low-level controller...')
 
@@ -101,9 +101,11 @@ class AdaHandler:
                     
         conn = connect2robot(PORT_robot)
         self.robot_state = readState(conn)
-
-        PORT_comms = 8642
-        conn2 = connect2comms(PORT_comms)
+        if (w_comms == True):
+            PORT_comms = 8642
+            #Inner_port = 8640
+            print("connecting to comms")
+            conn2 = connect2comms(PORT_comms)
 
         # start_state = self.robot_state
         # start_pos,start_trans = joint2pose(self.robot_state['q'])
@@ -127,7 +129,10 @@ class AdaHandler:
         
             
         while True:
-            
+            if ((end_time - sim_time) > 7.0 and (w_comms == True)):
+                #print("SENT",self.robot_state['q'])
+                send2comms(conn2, self.robot_state['q'])
+                sim_time = time.time()
             
             xdot = [0]*6
             robot_dof_values = 7
@@ -182,7 +187,7 @@ class AdaHandler:
             
         
 
-    def execute_policy_sim(self, direct_teleop_only=False, blend_only=False, fix_magnitude_user_command=False,  finish_trial_func=None, traj_data_recording=None):
+    def execute_policy_sim(self, direct_teleop_only=False, blend_only=False, fix_magnitude_user_command=False,  w_comms = True):
         #goal_distribution = np.array([0.333, 0.333, 0.333])
         
         self.user_bot = UserBot(self.goals)
@@ -198,11 +203,11 @@ class AdaHandler:
         ee_pos,ee_trans = joint2pose(self.robot_state['q'])
         #time_per_iter = 1./CONTROL_HZ
         #PORT_robot = 8080
-
-        PORT_comms = 8642
-        #Inner_port = 8640
-        print("connecting to comms")
-        conn2 = connect2comms(PORT_comms)
+        if (w_comms == True):
+            PORT_comms = 8642
+            #Inner_port = 8640
+            print("connecting to comms")
+            conn2 = connect2comms(PORT_comms)
 
 
 
@@ -251,7 +256,7 @@ class AdaHandler:
             xdot = [0]*6
             robot_dof_values = 7
             self.robot_state = self.env.panda.state
-            if (end_time - sim_time) > 7.0:
+            if ((end_time - sim_time) > 7.0 and (w_comms == True)):
                 #print("SENT",self.robot_state['q'])
                 send2comms(conn2, self.robot_state['q'])
                 sim_time = time.time()

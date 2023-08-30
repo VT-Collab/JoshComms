@@ -9,7 +9,7 @@ class GoalPredictor(object):
   log_max_prob_any_goal = np.log(max_prob_any_goal)
   def __init__(self, goals):
     self.goals = goals
-    self.log_goal_distribution = np.log((1./len(self.goals))*np.ones(len(self.goals)))
+    self.log_goal_distribution = np.log((1./len(self.goals))*np.ones(len(self.goals))) #scalar
 
 
   def update_distribution(self, values, q_values):

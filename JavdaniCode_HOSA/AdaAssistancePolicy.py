@@ -2,7 +2,7 @@
 from Goal import *
 import GoalPredictor as GoalPredictor
 #from ada_teleoperation.RobotState import Action
-from teleop_comms_Test import *
+
 from AssistancePolicy import *
 #from OpenraveUtils import *
 import math
@@ -54,7 +54,8 @@ class AdaAssistancePolicy:
     #check if we meet the confidence criteria which dictates whether or not assistance is provided
     #use the one from ancas paper - euclidean distance and some threshhold
     #if blend_confidence_function_euclidean_distance(self.robot_state, self.goals[max_prob_goal_ind]):
-    if blend_confidence_function_prob_diff(goal_distribution):
+
+    if blend_confidence_function_prob_diff(goal_distribution): #confidence function requires cutoff range to be 40% more likely than the 2nd most likely probability
       goal_distribution_all_max = np.zeros(len(goal_distribution))
       goal_distribution_all_max[max_prob_goal_ind] = 1.0
       #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
