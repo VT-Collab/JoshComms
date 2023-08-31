@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pybullet as p
 import pybullet_data
-from panda_env import Panda
+from panda_env2 import Panda
 from objects import YCBObject, InteractiveObj, RBOObject
 from tf import *
 import time
@@ -65,10 +65,10 @@ class SimpleEnv():
         
         self.fork_quaternion = [0.  ,       0.    ,     0.70710678, 0.70710678]
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.fork_poslist = [[0.5, 0.3, 0.02],[0.4, 0.0, 0.03],[0.4, 0.0, 0.02],[0.5, 0.-0.3, 0.2]]
+        self.fork_poslist = [0.5, 0.3, 0.02]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
-        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[ 0.87197471, -0.02540665, -0.48859053, -0.01714349],[ 0.74968156 , 0.00226022 ,-0.65986552 ,-0.05049703],[1.0  ,       0.    ,     0. , 0.]]
-        self.fork_grasp= [0,1,1,1]
+        self.fork_quatlist = [1.0  ,       0.    ,     0., 0.]
+        self.fork_grasp= 0
         self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
         self.fork.set_position_orientation(self.fork_position, self.fork_quaternion)
         # load a panda robot
