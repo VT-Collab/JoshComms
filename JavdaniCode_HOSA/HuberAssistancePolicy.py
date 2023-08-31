@@ -1,7 +1,6 @@
 import numpy as np
 #import IPython
 import AssistancePolicyOneTarget
-import panda
 from Utils import *
 
 
@@ -12,16 +11,14 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     super(HuberAssistancePolicy, self).__init__(goal)
     self.set_constants(self.TRANSLATION_LINEAR_MULTIPLIER, self.TRANSLATION_DELTA_SWITCH, self.TRANSLATION_CONSTANT_ADD, self.ROTATION_LINEAR_MULTIPLIER,
                         self.ROTATION_DELTA_SWITCH, self.ROTATION_CONSTANT_ADD, self.ROTATION_MULTIPLIER)
-    self.panda = panda
 
     self.goal = goal
     self.goal_pos = self.goal.pos
     self.goal_quat = self.goal.quat
     
 
-  def update(self, robot_state, user_action,panda):
+  def update(self, robot_state, user_action):
     super(HuberAssistancePolicy, self).update(robot_state, user_action)
-    self.panda = panda
     self.position_after_action,self.pose_after_action = joint2pose(self.robot_state_after_action)
     self.robot_position,self.robot_pose = joint2pose(self.robot_state["q"])
 
@@ -46,10 +43,14 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
   def get_action(self):
     #q_rot = self.get_qderivative_rotation()
     #q_trans = self.get_qderivative_translation()
-    current_q = self.robot_state["q"]
-    robotq = self.panda._inverse_kinematics(self.goal_pos, self.goal_quat) 
+    current_x = self.robot_state["x"]
+    goal_euler= np.array(transmethods.euler_from_quaternion(self.goal_quat))
+    goal_x = np.append(self.goal_pos,goal_euler)
+    xdot =  goal_x - current_x
+
+    robot_qdot= xdot2qdot(xdot, self.robot_state) #qdot
     #print(np.shape(current_q[:7]),np.shape(robotq[:7]))
-    robot_qdot = robotq[:7] - current_q[:7]
+     #= .001*(robotq[:7] - current_q[:7])
     return robot_qdot
 
 #   def get_qderivative_translation(self):

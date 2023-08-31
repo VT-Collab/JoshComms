@@ -16,14 +16,14 @@ class AssistancePolicy:
     #self.user_input_mapper = UserInputMapper()
 
 
-  def update(self, robot_state, user_action,panda):
+  def update(self, robot_state, user_action):
     self.robot_state = robot_state
     #user action corresponds to the effect of direct teleoperation on the robot
     #self.user_action = self.user_input_mapper.input_to_action(user_input, robot_state)
     self.user_action = user_action
 
     for goal_policy in self.goal_assist_policies:
-      goal_policy.update(robot_state, self.user_action,panda)
+      goal_policy.update(robot_state, self.user_action)
 
   def get_values(self):
     values = np.ndarray(len(self.goal_assist_policies))

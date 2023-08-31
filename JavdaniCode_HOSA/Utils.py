@@ -145,9 +145,9 @@ def readState(conn):
 def connect2comms(PORT):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #s.bind(('192.168.1.26', PORT))
-    #s.bind(('172.16.0.3', PORT))
-    s.bind(('192.168.1.57', PORT))
+    s.bind(('172.16.0.3', PORT))
+    #s.connect(('192.168.1.3', PORT_comms)) #White Box
+    #s.bind(('192.168.1.57', PORT))
     s.listen()
     conn, addr = s.accept()
     return conn
@@ -228,12 +228,12 @@ class Joystick(object):
 			z2 = 0.0
 		if abs(z3) < self.deadband:
 			z3 = 0.0
-		A_pressed = self.gamepad.get_button(0) and (curr_time - self.lastpress > self.timeband)
-		B_pressed = self.gamepad.get_button(1) and (curr_time - self.lastpress > self.timeband)
-		X_pressed = self.gamepad.get_button(2) and (curr_time - self.lastpress > self.timeband)
-		Y_pressed = self.gamepad.get_button(3) and (curr_time - self.lastpress > self.timeband)
-		START_pressed = self.gamepad.get_button(7) and (curr_time - self.lastpress > self.timeband)
-		STOP_pressed = self.gamepad.get_button(6) and (curr_time - self.lastpress > self.timeband)
+		A_pressed = self.gamepad.get_button(0) 
+		B_pressed = self.gamepad.get_button(1) 
+		X_pressed = self.gamepad.get_button(2) 
+		Y_pressed = self.gamepad.get_button(3) 
+		START_pressed = self.gamepad.get_button(7) 
+		STOP_pressed = self.gamepad.get_button(6) 
 		Right_trigger = self.gamepad.get_button(5)
 		Left_Trigger = self.gamepad.get_button(4)
 		if A_pressed or START_pressed or B_pressed:
