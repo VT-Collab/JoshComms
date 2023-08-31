@@ -7,6 +7,7 @@ from panda_env import Panda
 from objects import YCBObject, InteractiveObj, RBOObject
 from tf import *
 import time
+import pickle
 
 
 class VizClass(object):
@@ -28,8 +29,8 @@ class VizClass(object):
 
 class VizServer(VizClass):
     def send2comms(self, msg):
-        send_msg = "s," + msg + ","
-        self.conn.send(send_msg.encode())
+        send_msg = pickle.dumps(msg)
+        self.conn.send(send_msg)
         return
 
     def send(self, *args):
@@ -44,11 +45,9 @@ class VizClient(VizClass):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.connect((self.ip, self.port))
-        message = str(s.recv(2048))[2:-2]
-        state_str = list(message.split(","))
-        if message is None:
-            return None
-        return state_str
+        message = s.recv(2048)
+        recv = pickle.loads(message)
+        return recv
 
     def __call__(self):
         return self.listen2comms()
