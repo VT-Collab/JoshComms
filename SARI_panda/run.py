@@ -17,11 +17,13 @@ from viz import VizServer
 def run_test(args):
     mover = TrajectoryClient()
     joystick = JoystickControl()
-    viz_server = VizServer(args.ip, args.port)
 
     rate = rospy.Rate(1000)
 
     visualize = not args.noviz
+    viz_server = None
+    if visualize:
+        viz_server = VizServer(args.ip, args.port)
     VIZ_TIME_INTERVAL = 7.0  # seconds
 
     # get savenames and print savenames
@@ -172,7 +174,7 @@ def run_test(args):
         # show visualization
 
         if visualize and (curr_time - prev_viz_time) >= VIZ_TIME_INTERVAL:
-            viz_server.send(qdot_r)
+            viz_server.send(data)
             prev_viz_time = curr_time
 
         if curr_time - assist_time >= assist_start and not assist:
