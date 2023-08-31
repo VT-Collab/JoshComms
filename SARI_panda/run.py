@@ -7,18 +7,22 @@ import numpy as np
 from utils import TrajectoryClient, JoystickControl, convert_to_6d
 from model_utils import Model
 
-np.set_printoptions(precision=2, suppress=True)
+# from comms_client import connect2comms, send2comms
+from viz import VizServer
 
 """ TODO
 - Add event logging
 """
 
-
 def run_test(args):
     mover = TrajectoryClient()
     joystick = JoystickControl()
+    viz_server = VizServer(args.ip, args.port)
 
     rate = rospy.Rate(1000)
+
+    visualize = not args.noviz
+    VIZ_TIME_INTERVAL = 7.0  # seconds
 
     # get savenames and print savenames
     # Create model based on runtype
@@ -165,6 +169,12 @@ def run_test(args):
         qdot_r = qdot_r.tolist()[0]
 
         curr_time = time.time()
+        # show visualization
+
+        if visualize and (curr_time - prev_viz_time) >= VIZ_TIME_INTERVAL:
+            viz_server.send(qdot_r)
+            prev_viz_time = curr_time
+
         if curr_time - assist_time >= assist_start and not assist:
             rospy.loginfo("Assistance started")
             assist = True
@@ -174,6 +184,7 @@ def run_test(args):
             # if args.method != "ours" :
 
             qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(qdot_h)
+
             # qdot = np.clip(qdot, -0.3, 0.3)
             qdot = qdot.tolist()
         else:
@@ -210,6 +221,12 @@ def main():
         "--filename", type=str, help="Savename for data (default:test)", default="test"
     )
     parser.add_argument(
+        "--ip", type=str, help="IP to use", default="127.0.0.1"
+    )
+    parser.add_argument(
+        "--port", type=str, help="Port to use", default="1234"
+    )
+    parser.add_argument(
         "--run-num", type=int, help="run number to save data (default:0)", default=0
     )
     parser.add_argument(
@@ -219,12 +236,14 @@ def main():
         help="method to use (default:sari)",
         default="sari",
     )
+    parser.add_argument("--noviz", type=str, action="store_true")
     args = parser.parse_args()
     rospy.loginfo(args)
     run_test(args)
 
 
 if __name__ == "__main__":
+    np.set_printoptions(precision=2, suppress=True)
     try:
         main()
     except rospy.ROSInterruptException:
