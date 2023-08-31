@@ -39,7 +39,7 @@ class VizServer(VizClass):
         return self.send(*args)
 
 
-class VizClient(VizServer):
+class VizClient(VizClass):
     def listen2comms(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
