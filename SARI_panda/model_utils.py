@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from sari.train_classifier import Net
 from sari.train_cae import CAE
 
-import rospy
+# import rospy
 
 GCL_FILENAMES = [
     "intent0/sac_gcl_FINAL_intent0.pt",
@@ -17,11 +17,12 @@ GCL_FILENAMES = [
 class Model(object):
     def __init__(self, args):
         self.args = args
-        tasks = ["place", "pour", "stir"]
+        # tasks = ["place", "pour", "stir"]
+        tasks = ["forktest"]
         cae_name = "sari/models/cae_" + "_".join(tasks[: self.args.n_intents])
         class_name = "sari/models/class_" + "_".join(tasks[: self.args.n_intents])
         self.model = SARI(classifier_name=class_name, cae_name=cae_name)
-        rospy.loginfo("Loaded SARI model with {} intents".format(self.args.n_intents))
+        # rospy.loginfo("Loaded SARI model with {} intents".format(self.args.n_intents))
 
     def get_params(self, data):
         # classifier input = q + curr_pos_awrap
@@ -37,6 +38,7 @@ class Model(object):
                 float(data["slow_mode"]),
             ]
         )
+        print(d)
         z = self.model.encoder(d)
         a_robot = self.model.decoder(z, d)
         alpha = min(alpha, 0.6)

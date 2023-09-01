@@ -106,7 +106,7 @@ class Joystick(object):
 class RemoteClient(object):
 
     def __init__(self):
-        self.firebase_sub = rospy.Subscriber('/remote_cmd', Float32MultiArray, self.firebase_cb)
+        #self.firebase_sub = rospy.Subscriber('/remote_cmd', Float32MultiArray, self.firebase_cb)
         self.axes = []
         self.mode = 0
         self.slow = 0
@@ -300,7 +300,7 @@ def get_rotation_mat(euler):
 
     R_y = np.mat([[np.cos(euler[1]), 0, np.sin(euler[1])],
                   [0, 1, 0],
-                  [-np.sin(euler[1]), 0, np.cos([1])]])
+                  [-np.sin(euler[1]), 0, np.cos(euler[1])]])
 
     R_z = np.mat([[np.cos(euler[2]), -np.sin(euler[2]), 0],
                   [np.sin(euler[2]), np.cos(euler[2]), 0],
@@ -313,3 +313,57 @@ def convert_to_6d(pos):
     pos_awrap[:3] = pos[:3]
     pos_awrap[3:] = get_rotation_mat(pos[3:]).flatten('F')[0,:6]
     return pos_awrap
+
+def get_rotation_mat(euler):
+    
+    R_x = np.mat([[1, 0, 0],
+                  [0, np.cos(euler[0]), -np.sin(euler[0])],
+                  [0, np.sin(euler[0]), np.cos(euler[0])]])
+
+    R_y = np.mat([[np.cos(euler[1]), 0, np.sin(euler[1])],
+                  [0, 1, 0],
+                  [-np.sin(euler[1]), 0, np.cos(euler[1])]])
+
+    R_z = np.mat([[np.cos(euler[2]), -np.sin(euler[2]), 0],
+                  [np.sin(euler[2]), np.cos(euler[2]), 0],
+                  [0, 0, 1]])
+    R = R_x * R_y * R_z
+    return R
+def get_quaternion_from_euler(roll, pitch, yaw):
+    """
+    Convert an Euler angle to a quaternion.
+
+    Input
+    :param roll: The roll (rotation around x-axis) angle in radians.
+    :param pitch: The pitch (rotation around y-axis) angle in radians.
+    :param yaw: The yaw (rotation around z-axis) angle in radians.
+
+    Output
+    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
+    """
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+    return [qx, qy, qz, qw]
+
+def joint2pose(q):
+    def RotX(q):
+        return np.array([[1, 0, 0, 0], [0, np.cos(q), -np.sin(q), 0], [0, np.sin(q), np.cos(q), 0], [0, 0, 0, 1]])
+    def RotZ(q):
+        return np.array([[np.cos(q), -np.sin(q), 0, 0], [np.sin(q), np.cos(q), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    def TransX(q, x, y, z):
+        return np.array([[1, 0, 0, x], [0, np.cos(q), -np.sin(q), y], [0, np.sin(q), np.cos(q), z], [0, 0, 0, 1]])
+    def TransZ(q, x, y, z):
+        return np.array([[np.cos(q), -np.sin(q), 0, x], [np.sin(q), np.cos(q), 0, y], [0, 0, 1, z], [0, 0, 0, 1]])
+    H1 = TransZ(q[0], 0, 0, 0.333)
+    H2 = np.dot(RotX(-np.pi/2), RotZ(q[1]))
+    H3 = np.dot(TransX(np.pi/2, 0, -0.316, 0), RotZ(q[2]))
+    H4 = np.dot(TransX(np.pi/2, 0.0825, 0, 0), RotZ(q[3]))
+    H5 = np.dot(TransX(-np.pi/2, -0.0825, 0.384, 0), RotZ(q[4]))
+    H6 = np.dot(RotX(np.pi/2), RotZ(q[5]))
+    H7 = np.dot(TransX(np.pi/2, 0.088, 0, 0), RotZ(q[6]))
+    H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.2105)
+    H = np.linalg.multi_dot([H1, H2, H3, H4, H5, H6, H7, H_panda_hand])
+    return H[:,3][:3],H

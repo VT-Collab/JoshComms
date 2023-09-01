@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pybullet as p
 import pybullet_data
-from panda_env import Panda
+from panda_env2 import Panda
 from objects import YCBObject, InteractiveObj, RBOObject
 from tf import *
 import time
