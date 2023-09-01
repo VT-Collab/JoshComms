@@ -156,6 +156,12 @@ def train_cae(args):
                 action = next_pos - noise_pos
 
                 # history = noise_q + noise_pos + curr_gripper_pos + trans_mode + slow_mode
+
+                print(len(noise_q))
+                print(noise_q)
+                print(len(noise_pos_awrap))
+                print(noise_pos_awrap)
+                input()
                 
                 history = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode

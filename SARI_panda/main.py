@@ -4,8 +4,8 @@ from run import run_test as run_sari
 
 def main(args):
     np.set_printoptions(precision=2, suppress=True)
-    rospy.init_node("run")
-    rospy.loginfo(args)
+    # rospy.init_node("run")
+    # rospy.loginfo(args)
     run_sari(args)
 
 

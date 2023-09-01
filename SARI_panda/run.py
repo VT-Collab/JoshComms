@@ -1,10 +1,20 @@
 # Standard imports
-import rospy
+# import rospy
 import os, time, pickle, argparse
 import numpy as np
 
 # Imports from current directory
-from utils import TrajectoryClient, JoystickControl, convert_to_6d
+# from utils import TrajectoryClient, JoystickControl, convert_to_6d
+from utils_panda import JoystickControl, convert_to_6d
+from utils_panda import (
+    listen2robot,
+    joint2pose,
+    xdot2qdot,
+    send2robot,
+    connect2robot,
+    readState,
+    go2home,
+)
 from model_utils import Model
 
 # from comms_client import connect2comms, send2comms
@@ -14,11 +24,68 @@ from viz import VizServer
 - Add event logging
 """
 
-def run_test(args):
-    mover = TrajectoryClient()
-    joystick = JoystickControl()
 
-    rate = rospy.Rate(1000)
+class TrajectoryClient:
+    def __init__(self, PORT=8080):
+        self.conn = connect2robot(PORT)
+        self.HOME = [0.8385, -0.0609, 0.2447, -1.5657, 0.0089, 1.5335, 1.8607]
+        self._get_states()  # assignment unnecessary
+
+    def _get_states(self):
+        # state = listen2robot(self.conn)
+        state = readState(self.conn)  # should this be used?
+        self.joint_states = state['q']
+        print(state)
+        print('wta')
+        return state
+
+    def _joint_to_pose(self, q):
+        pos, rot = joint2pose(q)
+        print(pos.tolist())
+        print(rot.tolist())
+        print(pos.tolist() + rot.flatten().tolist())
+        return pos.tolist() + rot.flatten().tolist()
+
+    def joint2pose(self):
+        self._get_states()
+        x = self._joint_to_pose(self.joint_states)
+        print(x)
+        return x
+
+    def robotiq_joint_state(self):
+        return 0.0
+
+    def xdot2qdot(self, xdot):
+        state = self._get_states()  # this also sets self.state
+        print(xdot)
+        print(state)
+        return xdot2qdot(xdot, state)
+
+    def switch_controller(self, mode):
+        self.mode = mode
+
+    def send_joint(self, q, lim):
+        send2robot(self.conn, qdot, limit=lim)
+        return
+
+    def actuate_gripper(self, *args):
+        return
+
+    def send(self, qdot):
+        send2robot(self.conn, qdot)
+        return
+
+    def go2home(self):
+        go2home(self.conn)
+        return
+
+
+def run_test(args):
+    # mover = TrajectoryClient()
+    joystick = JoystickControl()
+    mover = TrajectoryClient()
+
+    # rate = rospy.Rate(1000)
 
     visualize = not args.noviz
     viz_server = None
@@ -31,10 +98,10 @@ def run_test(args):
 
     model = Model(args)
 
-    rospy.loginfo("Initialized, Moving Home")
-    mover.go_home()
-    mover.reset_gripper()
-    rospy.loginfo("Reached Home, waiting for input")
+    print("Initialized, Moving Home")
+    mover.go2home()
+    # reset_gripper(conn)
+    print("Reached Home, waiting for input")
 
     start_pos = None
     start_q = None
@@ -44,7 +111,7 @@ def run_test(args):
 
     start_gripper_pos = None
     while start_gripper_pos is None:
-        start_gripper_pos = mover.robotiq_joint_state
+        start_gripper_pos = mover.robotiq_joint_state()
 
     step_time = 0.1
     start_time = time.time()
@@ -68,10 +135,12 @@ def run_test(args):
         os.makedirs(abs_path)
 
     savename = folder + "/" + args.filename + "_" + str(args.run_num) + ".pkl"
-    while not rospy.is_shutdown():
+    while True:
+        # while not rospy.is_shutdown():
         q = np.asarray(mover.joint_states).tolist()
+        print(q)
         curr_pos = mover.joint2pose()
-        curr_gripper_pos = mover.robotiq_joint_state
+        curr_gripper_pos = mover.robotiq_joint_state()
 
         axes, gripper, mode, slow, start = joystick.getInput()
 
@@ -82,14 +151,12 @@ def run_test(args):
             assist_time = time.time()
 
         if not run_start:
-            rospy.loginfo("Start received")
+            print("Start received")
             run_start = True
 
         if start:
             pickle.dump(traj, open(savename, "wb"))
-            rospy.loginfo(
-                "Collected {} datapoints and saved at {}".format(len(traj), savename)
-            )
+            print("Collected {} datapoints and saved at {}".format(len(traj), savename))
             mover.switch_controller(mode="position")
             mover.send_joint(q, 1.0)
             return 1
@@ -97,14 +164,14 @@ def run_test(args):
         # switch between translation and rotation
         if mode:
             trans_mode = not trans_mode
-            rospy.loginfo("Translation Mode: {}".format(trans_mode))
+            print("Translation Mode: {}".format(trans_mode))
             while mode:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
         # Toggle speed of robot
         if slow:
             slow_mode = not slow_mode
-            rospy.loginfo("Slow Mode: {}".format(trans_mode))
+            print("Slow Mode: {}".format(trans_mode))
             while slow:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
@@ -135,17 +202,18 @@ def run_test(args):
         qdot_r = [0] * 6
 
         gripper_ac = 0
-        if gripper and (mover.robotiq_joint_state > 0):
+        if gripper and (mover.robotiq_joint_state() > 0):
             mover.actuate_gripper(gripper_ac, 1, 0.0)
             while gripper:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
-        elif gripper and (mover.robotiq_joint_state == 0):
+        elif gripper and (mover.robotiq_joint_state() == 0):
             gripper_ac = 1
             mover.actuate_gripper(gripper_ac, 1, 0)
             while gripper:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
+        print(curr_pos)
         curr_pos_awrap = convert_to_6d(curr_pos)
 
         data = {}
@@ -154,6 +222,7 @@ def run_test(args):
         data["trans_mode"] = trans_mode
         data["slow_mode"] = slow_mode
         data["curr_gripper_pos"] = curr_gripper_pos
+        print(data)
 
         alpha, a_robot = model.get_params(data)
         xdot_r = [0] * 6
@@ -178,7 +247,7 @@ def run_test(args):
             prev_viz_time = curr_time
 
         if curr_time - assist_time >= assist_start and not assist:
-            rospy.loginfo("Assistance started")
+            print("Assistance started")
             assist = True
 
         if assist:
@@ -204,7 +273,7 @@ def run_test(args):
 
 
 def main():
-    rospy.init_node("run")
+    # rospy.init_node("run")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -222,12 +291,8 @@ def main():
     parser.add_argument(
         "--filename", type=str, help="Savename for data (default:test)", default="test"
     )
-    parser.add_argument(
-        "--ip", type=str, help="IP to use", default="127.0.0.1"
-    )
-    parser.add_argument(
-        "--port", type=str, help="Port to use", default="1234"
-    )
+    parser.add_argument("--ip", type=str, help="IP to use", default="127.0.0.1")
+    parser.add_argument("--port", type=int, help="Port to use", default=8642)
     parser.add_argument(
         "--run-num", type=int, help="run number to save data (default:0)", default=0
     )
@@ -238,15 +303,12 @@ def main():
         help="method to use (default:sari)",
         default="sari",
     )
-    parser.add_argument("--noviz", type=str, action="store_true")
+    parser.add_argument("--noviz", action="store_true")
     args = parser.parse_args()
-    rospy.loginfo(args)
+    print(args)
     run_test(args)
 
 
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
-    try:
-        main()
-    except rospy.ROSInterruptException:
-        pass
+    main()
