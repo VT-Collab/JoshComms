@@ -42,7 +42,7 @@ if __name__ == "__main__":
   # print("QUAT")
   # print(a)
   # a = 1/0
-  env = Initialize_Env(visualize=False)
+  env = Initialize_Env(visualize=True)
     #env,robot = Initialize_Adapy(args, env_path=env_path)
   #time.sleep(30)
   #finish_trial_func_withrobot = partial(Finish_Trial_Func, robot=robot)
@@ -51,8 +51,8 @@ if __name__ == "__main__":
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
     ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
-    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=TRUE)
-    #ada_handler.execute_policy_sim(direct_teleop_only=True, fix_magnitude_user_command=False,w_comms=True)
+    #ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=TRUE)
+    ada_handler.execute_policy_sim(direct_teleop_only=True, fix_magnitude_user_command=False,w_comms=False)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 
 
