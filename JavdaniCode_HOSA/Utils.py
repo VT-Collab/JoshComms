@@ -11,7 +11,7 @@ import pygame
 from tkinter import *
 import tf as transmethods
 
-from env2 import SimpleEnv
+from env3 import SimpleEnv
 
 def RotationMatrixDistance(pose1, pose2):
   quat1 = transmethods.quaternion_from_matrix(pose1)
@@ -315,6 +315,7 @@ def goal_from_object(env,obj):
   pos = obj['positions']
   quat = obj['quats']
   #print(pose)
+  print("OPOS",pos)
   ik_sol = manip._inverse_kinematics(pos, quat)
   target_poses.append(quat)
   target_iks.append(ik_sol)
