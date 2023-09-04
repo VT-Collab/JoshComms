@@ -90,7 +90,7 @@ def train_classifier(args):
 
     data_folder = "data"
     model_folder = "models"
-    savename = 'cae_' + "_".join(folders)
+    savename = 'class_' + "_".join(folders)
     #pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
     #lookahead = args.lookahead#5
     #noiselevel = args.noiselevel#0.0005
