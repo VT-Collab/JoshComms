@@ -208,10 +208,12 @@ def train_classifier(args):
     targets = [element[1] for element in dataset]
 
     # Training parameters
-    EPOCH = 100
+    # EPOCH = 100
+    EPOCH = 300
     # BATCH_SIZE_TRAIN = int(train_data.__len__() / 5.)
     BATCH_SIZE_TRAIN = 2
-    LR = 0.0001
+    # LR = 0.0001
+    LR = 0.001
     LR_STEP_SIZE = 200
     LR_GAMMA = 0.1
 

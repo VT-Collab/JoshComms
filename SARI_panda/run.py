@@ -29,36 +29,35 @@ class TrajectoryClient:
     def __init__(self, PORT=8080):
         self.conn = connect2robot(PORT)
         self.HOME = [0.8385, -0.0609, 0.2447, -1.5657, 0.0089, 1.5335, 1.8607]
-        self._get_states()  # assignment unnecessary
+        self._blocking_get_states()  # assignment unnecessary
 
-    def _get_states(self):
-        # state = listen2robot(self.conn)
+    def _blocking_get_states(self):
         state = readState(self.conn)  # should this be used?
+        self.state = state
         self.joint_states = state['q']
-        print(state)
-        print('wta')
         return state
+
+    def _lazy_get_states(self):
+        state = listen2robot(self.conn)
+        if state is not None:
+            self.state = state
+            self.joint_states = state['q']
+        return self.state
 
     def _joint_to_pose(self, q):
         pos, rot = joint2pose(q)
-        print(pos.tolist())
-        print(rot.tolist())
-        print(pos.tolist() + rot.flatten().tolist())
         return pos.tolist() + rot.flatten().tolist()
 
     def joint2pose(self):
-        self._get_states()
+        self._lazy_get_states()
         x = self._joint_to_pose(self.joint_states)
-        print(x)
         return x
 
     def robotiq_joint_state(self):
         return 0.0
 
     def xdot2qdot(self, xdot):
-        state = self._get_states()  # this also sets self.state
-        print(xdot)
-        print(state)
+        state = self._lazy_get_states()  # this also sets self.state
         return xdot2qdot(xdot, state)
 
     def switch_controller(self, mode):
@@ -85,23 +84,17 @@ def run_test(args):
     joystick = JoystickControl()
     mover = TrajectoryClient()
 
-    # rate = rospy.Rate(1000)
+    rate_hz = 100
+    rate_s = 1 / rate_hz
 
     visualize = not args.noviz
     viz_server = None
     if visualize:
         viz_server = VizServer(args.ip, args.port)
-    VIZ_TIME_INTERVAL = 7.0  # seconds
-
-    # get savenames and print savenames
-    # Create model based on runtype
 
     model = Model(args)
 
-    print("Initialized, Moving Home")
-    mover.go2home()
-    # reset_gripper(conn)
-    print("Reached Home, waiting for input")
+
 
     start_pos = None
     start_q = None
@@ -116,6 +109,8 @@ def run_test(args):
     step_time = 0.1
     start_time = time.time()
     assist_time = time.time()
+    prev_viz_time = 0.0
+    VIZ_TIME_INTERVAL = 7.0
 
     scaling_trans = 0.2
     scaling_rot = 0.4
@@ -135,11 +130,15 @@ def run_test(args):
         os.makedirs(abs_path)
 
     savename = folder + "/" + args.filename + "_" + str(args.run_num) + ".pkl"
+
     while True:
+        while_loop_start_time = time.time()
         # while not rospy.is_shutdown():
         q = np.asarray(mover.joint_states).tolist()
-        print(q)
+        # print("q", q)
+        # print("js", mover.joint_states)
         curr_pos = mover.joint2pose()
+        # print("curr_pos", curr_pos)
         curr_gripper_pos = mover.robotiq_joint_state()
 
         axes, gripper, mode, slow, start = joystick.getInput()
@@ -158,6 +157,7 @@ def run_test(args):
             pickle.dump(traj, open(savename, "wb"))
             print("Collected {} datapoints and saved at {}".format(len(traj), savename))
             mover.switch_controller(mode="position")
+            # print("q", q)
             mover.send_joint(q, 1.0)
             return 1
 
@@ -197,7 +197,8 @@ def run_test(args):
             xdot_h[3:] = rot_vel.T[:]
 
         qdot_h = mover.xdot2qdot(xdot_h)
-        qdot_h = qdot_h.tolist()[0]
+        # qdot_h = qdot_h.tolist()[0]
+        qdot_h = qdot_h.tolist()
 
         qdot_r = [0] * 6
 
@@ -213,7 +214,6 @@ def run_test(args):
             while gripper:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
-        print(curr_pos)
         curr_pos_awrap = convert_to_6d(curr_pos)
 
         data = {}
@@ -222,7 +222,6 @@ def run_test(args):
         data["trans_mode"] = trans_mode
         data["slow_mode"] = slow_mode
         data["curr_gripper_pos"] = curr_gripper_pos
-        print(data)
 
         alpha, a_robot = model.get_params(data)
         xdot_r = [0] * 6
@@ -235,9 +234,11 @@ def run_test(args):
         data["a_human"] = xdot_h.tolist()
         data["a_robot"] = xdot_r  # .tolist()
 
+
         xdot_r = mover.xdot2qdot(xdot_r)
         qdot_r = 2.0 * xdot_r
-        qdot_r = qdot_r.tolist()[0]
+        # qdot_r = qdot_r.tolist()[0]
+        qdot_r = qdot_r.tolist()
 
         curr_time = time.time()
         # show visualization
@@ -254,10 +255,17 @@ def run_test(args):
             # sac method uses an interval between assistance times
             # if args.method != "ours" :
 
-            qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(qdot_h)
+            qdot = None
+            if alpha > 0.3:
+                qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(qdot_h)
+                qdot = qdot.tolist()
+            else:
+                qdot = qdot_h
 
-            # qdot = np.clip(qdot, -0.3, 0.3)
-            qdot = qdot.tolist()
+            # print("qdot", qdot)
+            # print("qdot_r", qdot_r)
+            # print("qdot_h", qdot_h)
+            # print("alpha", alpha)
         else:
             qdot = qdot_h
 
@@ -269,7 +277,8 @@ def run_test(args):
             traj.append(data)
             start_time = curr_time
 
-        rate.sleep()
+        # rate.sleep()
+        time.sleep(max(while_loop_start_time - time.time() + rate_s, 0.0))
 
 
 def main():

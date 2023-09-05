@@ -42,7 +42,7 @@ class CAE(nn.Module):
 
         # Encoder
         self.enc = nn.Sequential(
-            nn.Linear(21, 30),
+            nn.Linear(19, 30),
             nn.Tanh(),
             nn.Linear(30, 40),
             nn.Tanh(),
@@ -55,7 +55,7 @@ class CAE(nn.Module):
 
         # Policy
         self.dec = nn.Sequential(
-            nn.Linear(61, 40),
+            nn.Linear(59, 40),
             nn.Tanh(),
             nn.Linear(40, 30),
             nn.Tanh(),
@@ -90,13 +90,9 @@ def train_cae(args):
 
     parent_folder = 'demos'
     folders = ["forktest"]
-    #folders = folders[:args.n_tasks]
-    #rospy.loginfo("Using demos for tasks : {}".format(folders))
-
     data_folder = "data"
     model_folder = "models"
     savename = 'cae_' + "_".join(folders)
-    #pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
     lookahead = args.lookahead#5
     noiselevel = args.noiselevel#0.0005
     noisesamples = args.noisesamples#5
@@ -104,13 +100,9 @@ def train_cae(args):
     demos = []
     folder = "forktest"
     demos = [(parent_folder + "/" + folder + "/" +folder+"_1"+ ".pkl")]
-    #print("DEEEEEEEMMMMMMMMMMMMMMOOON",(parent_folder + "/" + folder + "/*.pkl"))
-    # for folder in folders:
-    #     demos += glob(parent_folder + "/" + folder + "/*.pkl")
     
     inverse_fails = 0
     for filename in demos:
-        #print("Workin",demos,filename)
         demo = pickle.load(open(filename, "rb"))
         n_states = len(demo)
 
@@ -129,21 +121,10 @@ def train_cae(args):
             next_pos = np.asarray(demo[idx+lookahead]["curr_pos"])
             next_q = np.asarray(demo[idx+lookahead]["curr_q"])
             next_gripper_pos = [demo[idx+lookahead]["curr_gripper_pos"]]
-            #print(noisesamples)
             for _ in range(noisesamples):
-                # add noise in cart space
                 noise_pos = curr_pos.copy() + np.random.normal(0, noiselevel, len(curr_pos))
                 
-                # convert to twist for kdl_kin
-                #noise_pos_twist = Twist()
-                # noise_pos_twist.linear.x = noise_pos[0]
-                # noise_pos_twist.linear.y = noise_pos[1]
-                # noise_pos_twist.linear.z = noise_pos[2]
-                # noise_pos_twist.angular.x = noise_pos[3]
-                # noise_pos_twist.angular.y = noise_pos[4]
-                # noise_pos_twist.angular.z = noise_pos[5]
-
-                noise_q = np.array(panda.pose2joint(noise_pos))
+                noise_q = np.array(panda.pose2joint(noise_pos))[0:len(curr_q)]
 
                 if None in noise_q:
                     inverse_fails += 1
@@ -155,43 +136,25 @@ def train_cae(args):
 
                 action = next_pos - noise_pos
 
-                # history = noise_q + noise_pos + curr_gripper_pos + trans_mode + slow_mode
 
-                print(len(noise_q))
-                print(noise_q)
-                print(len(noise_pos_awrap))
-                print(noise_pos_awrap)
-                input()
-                
                 history = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode
                 state = noise_q.tolist() + noise_pos_awrap.tolist() + curr_gripper_pos \
                             + curr_trans_mode + curr_slow_mode
                 dataset.append((history, state, action.tolist()))
-                #print("DATA",dataset)
-
-    # if inverse_fails > 0:
-    #     rospy.loginfo("Failed inverses: {}".format(inverse_fails))
 
     pickle.dump(dataset, open(data_folder + "/" + savename, "wb"))
-    # ace = dataset[0]
-    # one = ace[0]
-    # print(np.shape(one))
-    # ace = dataset[1]
-    # two = ace[1]
-    # print(np.shape(two))
-    # ace = dataset[2]
-    # three = ace[2]
-    # print(np.shape(three))
-
     
 
     model = CAE().to(device)
     train_data = MotionData(dataset)
 
-    EPOCH = 100
+    # EPOCH = 100
+    EPOCH = 300
+    # BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
-    LR = 0.0001
+    # LR = 0.0001
+    LR = 0.001
     LR_STEP_SIZE = 400
     LR_GAMMA = 0.15
     

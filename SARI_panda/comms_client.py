@@ -29,8 +29,7 @@ def listen2comms(PORT):
 def connect2comms(PORT):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('192.168.1.26', PORT))
-    #s.bind(('172.16.0.3', PORT))
+    s.bind(('127.0.0.1', PORT))
     s.listen()
     conn, addr = s.accept()
     return conn

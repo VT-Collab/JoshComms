@@ -20,7 +20,7 @@ def plot(data, axs):
     plt.pause(0.0001)
 
 def main():
-    plot_data = pickle.load(open("plot_data.pkl", "rb"))
+    plot_data = pickle.load(open("data/plot_data.pkl", "rb"))
     fig, axs = plt.subplots(int(len(plot_data[0]["data"])/2), 2)
     axs = axs.flat
     plt.ion()

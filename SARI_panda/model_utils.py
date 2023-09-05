@@ -21,6 +21,8 @@ class Model(object):
         tasks = ["forktest"]
         cae_name = "sari/models/cae_" + "_".join(tasks[: self.args.n_intents])
         class_name = "sari/models/class_" + "_".join(tasks[: self.args.n_intents])
+        print(cae_name)
+        print(class_name)
         self.model = SARI(classifier_name=class_name, cae_name=cae_name)
         # rospy.loginfo("Loaded SARI model with {} intents".format(self.args.n_intents))
 
@@ -38,7 +40,6 @@ class Model(object):
                 float(data["slow_mode"]),
             ]
         )
-        print(d)
         z = self.model.encoder(d)
         a_robot = self.model.decoder(z, d)
         alpha = min(alpha, 0.6)
