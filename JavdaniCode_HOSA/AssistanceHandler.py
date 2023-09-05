@@ -162,7 +162,7 @@ class AdaHandler:
 			if STOP:
 				print("[*] Done!")
 				return True
-			#print(xdot)
+			print(xdot)
 			
 			direct_teleop_action = xdot2qdot(xdot, self.robot_state) #qdot
 			if LeftT and ((end_time-left_time)>.2):

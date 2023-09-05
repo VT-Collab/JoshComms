@@ -43,7 +43,7 @@ class AssistancePolicy:
 
 
 
-  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=False):
+  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=True):
     assert goal_distribution.size == len(self.goal_assist_policies)
 
     action_dimension = GoalPolicy.TargetPolicy.ACTION_DIMENSION

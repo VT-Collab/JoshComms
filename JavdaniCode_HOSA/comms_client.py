@@ -81,7 +81,7 @@ def main():
 	s.connect(('172.16.0.3', PORT_comms)) #White Box
 	#s.connect(('192.168.1.3', PORT_comms)) #White Box
 	#s.connect(('192.168.1.57', PORT_comms)) #Josh laptop
-	
+	interface = Joystick()
 
 
 	run_time =3 #how long each run should go for
