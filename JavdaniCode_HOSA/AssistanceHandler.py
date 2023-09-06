@@ -115,12 +115,12 @@ class AdaHandler:
 
 
 		action_scale = 0.1
-
+		#print(self.robot_state["q"])
 		if direct_teleop_only: 
 			use_assistance = False
 		else:
 			use_assistance = True
-		auto_or_noto = True	
+		auto_or_noto = False
 
 		#set the huber constants differently if the robot movement magnitude is fixed to user input magnitude
 		if not direct_teleop_only and fix_magnitude_user_command:
@@ -145,6 +145,7 @@ class AdaHandler:
 			#get pose of min value target for user's goal
 			self.robot_state = readState(conn)
 			ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
+			#print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",transmethods.quaternion_from_matrix(ee_trans[0:4,0:4]))
 			interface = Joystick()
 			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
 			
@@ -162,7 +163,7 @@ class AdaHandler:
 			if STOP:
 				print("[*] Done!")
 				return True
-			print(xdot)
+			#print(xdot)
 			
 			direct_teleop_action = xdot2qdot(xdot, self.robot_state) #qdot
 			if LeftT and ((end_time-left_time)>.2):
