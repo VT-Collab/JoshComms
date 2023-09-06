@@ -221,7 +221,7 @@ class Joystick(object):
     curr_time = time.time()
     z1 = self.gamepad.get_axis(0)
     z2 = self.gamepad.get_axis(1)
-    z3 = self.gamepad.get_axis(4)
+    z3 = self.gamepad.get_axis(3)
     if abs(z1) < self.deadband:
       z1 = 0.0
     if abs(z2) < self.deadband:
