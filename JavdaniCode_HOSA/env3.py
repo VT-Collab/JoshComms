@@ -45,19 +45,6 @@ class SimpleEnv():
         # self.block3_quaternion = [0, 0, 0, 1]
         # self.block3.set_position_orientation(self.block3_position, self.block3_quaternion)
 
-        # # load door
-        # self.door = RBOObject('door')
-        # self.door.load()
-        # self.door_position = [0.3, -0.7, -0.4]
-        # self.door_quaternion = [0.70710678, 0.   ,      0.    ,     0.70710678]
-        # #print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",tf.quaternion_from_euler(np.pi/2, 0, 0, axes='sxyz'))
-        # self.door_angle = -0.5
-        # self.door.set_position_orientation(self.door_position, self.door_quaternion)
-        # p.resetJointState(self.door.body_id, 1, self.door_angle)
-
-        # load block1
-        # fork in food = [ 0.74968156 , 0.00226022 ,-0.65986552 ,-0.05049703],[.4,0,.4]
-        #positions, Pick up fork, move fork to center of table where food is, move fork to stabbing position, reverse to normal
         #print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",quaternion_from_matrix([-0.0545892,0.238157,-0.0895843,-1.89678,-0.0612414,1.11555,0.693995]))
         self.fork = RBOObject('fork_edit')
         self.fork.load()
@@ -65,12 +52,25 @@ class SimpleEnv():
         
         self.fork_quaternion = [0.  ,       0.    ,     0.70710678, 0.70710678]
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.fork_poslist = [[0.5, 0.3, 0.02]]
+        self.fork_poslist = [[0.5, 0.3, 0.02],[0.5, 0.0, 0.25]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
-        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.]]
-        self.fork_grasp= [0]
+        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[ 0, 0, np.sqrt(2)/2, np.sqrt(2)/2 ]]
+        self.fork_grasp= [0,1]
         self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
         self.fork.set_position_orientation(self.fork_position, self.fork_quaternion)
+
+        # load block1
+        self.mug = YCBObject("025_mug")
+        self.mug.load()
+        self.mug_position = [0.4, -0.3, 0.035]
+        self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
+        #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
+        self.mug_poslist = [[0.4, -0.3, 0.075],[0.4, -0.3, 0.035]]
+        #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
+        self.mug_quatlist = [[1.0  ,       0.    ,     0., 0.],[ 0, 0, np.sqrt(2)/2, np.sqrt(2)/2 ]]
+        self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
+
+
         # load a panda robot
         self.panda = Panda()
 
