@@ -17,6 +17,10 @@ from utils_panda import (
 )
 from model_utils import Model
 
+from online_training import train_online
+
+from panda_env2 import Panda
+
 # from comms_client import connect2comms, send2comms
 from viz import VizServer
 
@@ -64,7 +68,7 @@ class TrajectoryClient:
         self.mode = mode
 
     def send_joint(self, q, lim):
-        send2robot(self.conn, qdot, limit=lim)
+        send2robot(self.conn, q, limit=lim)
         return
 
     def actuate_gripper(self, *args):
@@ -82,7 +86,9 @@ class TrajectoryClient:
 def run_test(args):
     # mover = TrajectoryClient()
     joystick = JoystickControl()
+    print("Awaiting trajectory client...")
     mover = TrajectoryClient()
+    print("Trajectory client connected.")
 
     rate_hz = 100
     rate_s = 1 / rate_hz
@@ -90,11 +96,14 @@ def run_test(args):
     visualize = not args.noviz
     viz_server = None
     if visualize:
+        print("Awaiting viz client...")
         viz_server = VizServer(args.ip, args.port)
+        print("Viz client connected.")
 
     model = Model(args)
-
-
+    panda = None
+    if args.train_online:
+        panda = Panda()
 
     start_pos = None
     start_q = None
@@ -277,7 +286,10 @@ def run_test(args):
             traj.append(data)
             start_time = curr_time
 
-        # rate.sleep()
+        # TODO: test the efficiency of this, how fast is it? can we meet the
+        # sleep rate?
+        if args.online_learning:
+            train_online(model, data, panda, epochs=1) # perform async?
         time.sleep(max(while_loop_start_time - time.time() + rate_s, 0.0))
 
 
@@ -313,6 +325,7 @@ def main():
         default="sari",
     )
     parser.add_argument("--noviz", action="store_true")
+    parser.add_argument("--online-learning", action="store_true")
     args = parser.parse_args()
     print(args)
     run_test(args)

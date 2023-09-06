@@ -14,9 +14,7 @@ class VizClass(object):
 	def __init__(self, ip, port=8000):
 		self.ip = ip
 		self.port = port
-		print('awaiting...')
 		conn, addr = self.connect2comms()
-		print('connected!')
 		self.conn = conn
 		self.addr = addr
 
@@ -46,9 +44,7 @@ class VizClient(VizClass):
 	def __init__(self, ip, port):
 		self.ip = ip
 		self.port = port
-		print('awaiting...')
 		self.s = self.connect2comms()
-		print('connected!')
 		self.conn = None
 		self.addr = None
 
