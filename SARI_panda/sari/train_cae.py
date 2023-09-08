@@ -6,7 +6,7 @@ import pickle
 import numpy as np
 import sys
 import argparse
-from glob import glob
+import glob
 from utils_panda import convert_to_6d
 from panda_env2 import Panda
 #from geometry_msgs.msg import Twist
