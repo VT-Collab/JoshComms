@@ -32,7 +32,7 @@ class Panda():
         self.read_jacobian()
 
 
-    def reset(self,init_pos = [0.0, 0.0, 0.0, -2*np.pi/4, 0.0, np.pi/2, np.pi/4, 0.0, 0.0]):
+    def reset(self,init_pos = [0.0, 0.0, 0.0, -2*np.pi/4, 0.0, np.pi/2, np.pi/4, 0.0, 0]):
         q = init_pos 
         self._reset_robot(q)
 

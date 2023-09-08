@@ -216,7 +216,7 @@ class AdaHandler:
 		#goal_distribution = np.array([0.333, 0.333, 0.333])
 		
 		self.user_bot = UserBot(self.goals)
-		self.user_bot.set_user_goal(0)
+		self.user_bot.set_user_goal(3)
 		self.robot_state = self.panda.state
 		#self.panda.read_state()
 		#self.panda.read_jacobian()
@@ -289,8 +289,9 @@ class AdaHandler:
 			xcurr = self.env.panda.state['ee_position']
 			xdot = goal_position - xcurr
 			qcurr =  self.env.panda.state['ee_quaternion']
-			quat_dot = goal_quat - qcurr
-			
+			quat_dot = (goal_quat - qcurr)
+			#ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
+			#print("CURR:",qcurr,"GOAL",goal_quat)
 			direct_teleop_action = self.env.panda._action_finder(mode=1, djoint=[0]*7, dposition=xdot, dquaternion=quat_dot)
 			#auto_or_noto = 1
 			#print(direct)
@@ -301,11 +302,11 @@ class AdaHandler:
 
 			#step(self, joint =[0]*7,pos=[0]*3,quat =[0]*4 ,grasp = True,mode = 1):
 			#self.env.step(pos=xdot,quat =quat_dot,grasp = grasp,mode = 1)
-			self.env.step(joint = blend_action*.1,mode = 0, grasp = grasp)
+			self.env.step(joint = geet_action,mode = 0, grasp = grasp)
 
 			end_time=time.time()
-			if (np.linalg.norm((goal_position - xcurr))+np.linalg.norm(goal_quat-qcurr)) < .005:
-				print("DONE DONE DONE")
+			if (np.linalg.norm((goal_position - xcurr))+np.linalg.norm(goal_quat-qcurr)) < .01:
+				print("DONE AT GOAL")
 				break
 			if end_time-start_time > 60.0:
 				print("TimeOUt")

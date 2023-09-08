@@ -275,11 +275,41 @@ def Init_Goals(env, robot, randomize_goal_init=False):
     # goal_objects.append(env.block3)
     # goal_objects.append(env.door)
     
-    #self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
+    #fork
     for i in range(len(env.fork_details['grasp'])):
         fork1 = {'obj':env.fork,'grasp':env.fork_grasp[i],'positions':env.fork_poslist[i],'quats':env.fork_quatlist[i]}
         goal_objects.append(fork1)
     
+    #Cups
+    for i in range(len(env.cup1_details['grasp'])):
+        cup1 = {'obj':env.cup1,'grasp':env.cup1_grasp[i],'positions':env.cup1_poslist[i],'quats':env.cup1_quatlist[i]}
+        goal_objects.append(cup1)
+    for i in range(len(env.cup2_details['grasp'])):
+        cup2 = {'obj':env.cup2,'grasp':env.cup2_grasp[i],'positions':env.cup2_poslist[i],'quats':env.cup2_quatlist[i]}
+        goal_objects.append(cup2)
+    for i in range(len(env.cup3_details['grasp'])):
+        cup3 = {'obj':env.cup3,'grasp':env.cup3_grasp[i],'positions':env.cup3_poslist[i],'quats':env.cup3_quatlist[i]}
+        goal_objects.append(cup3)
+
+    #Mug
+    for i in range(len(env.mug_details['grasp'])):
+        mug = {'obj':env.mug,'grasp':env.mug_grasp[i],'positions':env.mug_poslist[i],'quats':env.mug_quatlist[i]}
+        #print("IM GONNA MUG YOU:", env.mug_quatlist[i])
+        goal_objects.append(mug)
+
+    #Salt+Pepper and container
+    for i in range(len(env.salt_details['grasp'])):
+        salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
+        goal_objects.append(salt)
+
+    for i in range(len(env.pepper_details['grasp'])):
+        pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}
+        goal_objects.append(pepper)
+
+    for i in range(len(env.container_details['grasp'])):
+        container = {'obj':env.container,'grasp':env.container_grasp[i],'positions':env.container_poslist[i],'quats':env.container_quatlist[i]}
+        goal_objects.append(container)
+
     # if randomize_goal_init:
     #   env.block_position += np.random.rand(3)*0.10 - 0.05
     #   env.reset_box()
@@ -318,7 +348,7 @@ def goal_from_object(env,obj):
   pos = obj['positions']
   quat = obj['quats']
   #print(pose)
-  print("OPOS",pos)
+  #print("OPOS",pos)
   ik_sol = manip._inverse_kinematics(pos, quat)
   target_poses.append(quat)
   target_iks.append(ik_sol)
