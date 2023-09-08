@@ -200,7 +200,7 @@ def record_demo(args):
         # if xdot_h[2] > 0.6:
         #       xdot_h[2] = 0.6
 
-        print(data)
+        # print(data)
         qdot = xdot2qdot(xdot_h, state)
         send2robot(conn, qdot)
         #print("BROTATO")

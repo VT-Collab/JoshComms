@@ -163,7 +163,7 @@ def listen2comms(conn):
     state_length = 7 + 7 + 7 + 6 + 42
     message = str(conn.recv(2048))[2:-2]
     state_str = list(message.split(","))
-    print(state_str)
+    # print(state_str)
     if message is not None:
         return state_str   
     return None
