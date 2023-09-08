@@ -12,7 +12,7 @@ from Utils import *
 
 class Goal: 
     
-    def __init__(self, pose,pos, grasp,target_poses = list(), target_iks = list()):
+    def __init__(self, pose,pos, grasp,target_poses = list(), target_iks = list(),priority = [True,True]):
       self.pose = pose
       self.quat = pose
       self.goal_num = 0
@@ -25,6 +25,7 @@ class Goal:
       self.target_poses = list(target_poses)
       self.target_iks = list(target_iks)
       self.target_quaternions = self.quat
+      self.priority = priority
       #self.compute_quaternions_from_target_poses()
 
       #print 'NUM POSES: ' + str(len(self.target_poses))

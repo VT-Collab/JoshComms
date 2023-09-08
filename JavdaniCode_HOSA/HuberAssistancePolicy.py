@@ -15,6 +15,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     self.goal = goal
     self.goal_pos = self.goal.pos
     self.goal_quat = self.goal.quat
+    self.goal_priority = goal.priority
     
 
   def update(self, robot_state, user_action):
@@ -110,9 +111,21 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 #     return self.get_cost_translation() + self.get_cost_rotation()
 
   def get_value(self):
+    if self.goal_priority[0] == False:
+
+      return self.get_value_rotation()*1.5
+    
+    if self.goal_priority[1] == False:
+
+      return self.get_value_translation()*1.5
     return self.get_value_translation() + self.get_value_rotation()
 
   def get_qvalue(self):
+    if self.goal_priority[0] == False:
+      return self.get_qvalue_rotation()*1.5
+    if self.goal_priority[1] == False:
+      return self.get_qvalue_translation()*1.5
+    
     return self.get_qvalue_translation() + self.get_qvalue_rotation()
 
 

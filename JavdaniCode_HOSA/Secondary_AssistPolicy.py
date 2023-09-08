@@ -31,6 +31,7 @@ class AssistancePolicy:
     for ind,goal_policy in enumerate(self.goal_assist_policies):
       values[ind] = goal_policy.get_value()
       qvalues[ind] = goal_policy.get_qvalue()
+      
 
     return values,qvalues
 

@@ -34,11 +34,10 @@ class SimpleEnv():
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
         self.fork_poslist = [[0.5, -0.3, 0.075],[0.55, 0.0, 0.25]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
-        #print(a)
-        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[0.696086, 0.71789723, 0.00630872, 0.00692856]
-]
+        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[0.696086, 0.71789723, 0.00630872, 0.00692856]]
+
         self.fork_grasp= [0,1]
-        self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
+        self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'priority': [[True,True],[False ,True]],'num':len(self.fork_grasp)}
         self.fork.set_position_orientation(self.fork_position, self.fork_quaternion)
 
         #Task 2
@@ -55,7 +54,7 @@ class SimpleEnv():
         self.cup1.set_position_orientation(self.cup1_position, self.cup1_quaternion)
         self.cup1_grasp = [0]
 
-        self.cup1_details = {'obj':self.cup1,'grasp':self.cup1_grasp,'positions':self.cup1_poslist,'quats':self.cup1_quatlist,'num':len(self.cup1_grasp)}
+        self.cup1_details = {'obj':self.cup1,'grasp':self.cup1_grasp,'positions':self.cup1_poslist,'quats':self.cup1_quatlist,'priority': [[True,True]],'num':len(self.cup1_grasp),}
 
         # Cup 2
         self.cup2 = YCBObject("002_master_chef_can")
@@ -68,7 +67,7 @@ class SimpleEnv():
         self.cup2_grasp = [0]
         self.cup2.set_position_orientation(self.cup2_position, self.cup2_quaternion)
         
-        self.cup2_details = {'obj':self.cup2,'grasp':self.cup2_grasp,'positions':self.cup2_poslist,'quats':self.cup2_quatlist,'num':len(self.cup2_grasp)}
+        self.cup2_details = {'obj':self.cup2,'grasp':self.cup2_grasp,'positions':self.cup2_poslist,'quats':self.cup2_quatlist,'priority': [[True,True]],'num':len(self.cup2_grasp)}
 
         # Cup 3
         self.cup3 = YCBObject("002_master_chef_can")
@@ -81,7 +80,7 @@ class SimpleEnv():
         self.cup3_grasp = [0]
         self.cup3.set_position_orientation(self.cup3_position, self.cup3_quaternion)
 
-        self.cup3_details = {'obj':self.cup3,'grasp':self.cup3_grasp,'positions':self.cup3_poslist,'quats':self.cup3_quatlist,'num':len(self.cup3_grasp)}
+        self.cup3_details = {'obj':self.cup3,'grasp':self.cup3_grasp,'positions':self.cup3_poslist,'quats':self.cup3_quatlist,'priority': [[True,True]],'num':len(self.cup3_grasp)}
                 
 
         #Task 3
@@ -91,13 +90,13 @@ class SimpleEnv():
         self.mug_position = [0.45, -0.1, 0.035]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.mug_poslist = [[0.45, -0.1, 0.075],[0.45, -0.15, 0.25]]
+        self.mug_poslist = [[0.45, -0.1, 0.075],[0.45, -0.15, 0.2]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
         self.mug_quatlist = [[1.0  ,       0.    ,     0., 0.],[ 0.738987 ,  -0.00291435 ,-0.6732182 , -0.02582569]]
         self.mug_grasp = [0,1]
         self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
 
-        self.mug_details = {'obj':self.mug,'grasp':self.mug_grasp,'positions':self.mug_poslist,'quats':self.mug_quatlist,'num':len(self.mug_grasp)}
+        self.mug_details = {'obj':self.mug,'grasp':self.mug_grasp,'positions':self.mug_poslist,'quats':self.mug_quatlist,'priority': [[True,True],[False,True]],'num':len(self.mug_grasp)}
 
         #Task 4
         #Load Salt + Pepper Shakers and basket
@@ -113,7 +112,7 @@ class SimpleEnv():
         self.salt_grasp = [0]
         self.salt.set_position_orientation(self.salt_position, self.salt_quaternion)
 
-        self.salt_details = {'obj':self.salt,'grasp':self.salt_grasp,'positions':self.salt_poslist,'quats':self.salt_quatlist,'num':len(self.salt_grasp)}
+        self.salt_details = {'obj':self.salt,'grasp':self.salt_grasp,'positions':self.salt_poslist,'quats':self.salt_quatlist,'priority': [[True,True]],'num':len(self.salt_grasp)}
 
         #Pepper Shaker
         self.pepper = RBOObject("block")
@@ -126,7 +125,7 @@ class SimpleEnv():
         self.pepper_grasp = [0]
         self.pepper.set_position_orientation(self.pepper_position, self.pepper_quaternion)
 
-        self.pepper_details = {'obj':self.pepper,'grasp':self.pepper_grasp,'positions':self.pepper_poslist,'quats':self.pepper_quatlist,'num':len(self.pepper_grasp)}
+        self.pepper_details = {'obj':self.pepper,'grasp':self.pepper_grasp,'positions':self.pepper_poslist,'quats':self.pepper_quatlist,'priority': [[True,True]],'num':len(self.pepper_grasp)}
 
         #Season Container
         self.container = RBOObject("block2")
@@ -139,7 +138,7 @@ class SimpleEnv():
         self.container_grasp = [0]
         self.container.set_position_orientation(self.container_position, self.container_quaternion)
 
-        self.container_details = {'obj':self.container,'grasp':self.container_grasp,'positions':self.container_poslist,'quats':self.container_quatlist,'num':len(self.container_grasp)}
+        self.container_details = {'obj':self.container,'grasp':self.container_grasp,'positions':self.container_poslist,'quats':self.container_quatlist,'priority': [[True,True]],'num':len(self.container_grasp)}
 
 
         # load a panda robot

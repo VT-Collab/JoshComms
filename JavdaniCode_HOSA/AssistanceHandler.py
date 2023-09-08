@@ -216,7 +216,7 @@ class AdaHandler:
 		#goal_distribution = np.array([0.333, 0.333, 0.333])
 		
 		self.user_bot = UserBot(self.goals)
-		self.user_bot.set_user_goal(3)
+		self.user_bot.set_user_goal(1)
 		self.robot_state = self.panda.state
 		#self.panda.read_state()
 		#self.panda.read_jacobian()
