@@ -99,7 +99,8 @@ def train_classifier(args):
     dataset = []
     demos = []
     folder = "all"
-    demos = glob.glob(parent_folder + "/" + folder + "/" + "**.pkl")
+    demos = glob.glob(parent_folder + "/" + folder + "/**/*.pkl")
+    print(demos)
     # demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     true_cnt = 0
