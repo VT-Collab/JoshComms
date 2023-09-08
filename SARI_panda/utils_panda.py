@@ -145,7 +145,7 @@ def send2robot(conn, qdot, limit=1.0):
 		qdot = np.asarray([qdot[i] * limit/scale for i in range(7)])
 	send_msg = np.array2string(qdot, precision=5, separator=',',suppress_small=True)[1:-1]
 	send_msg = "s," + send_msg + ","
-	print(send_msg)
+	# print(send_msg)
 	conn.send(send_msg.encode())
 
 def listen2robot(conn):
