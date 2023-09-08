@@ -99,7 +99,7 @@ def train_cae(args):
     dataset = []
     demos = []
     folder = "forktest"
-    demos = [(parent_folder + "/" + folder + "/" +folder+"_1"+ ".pkl")]
+    demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     inverse_fails = 0
     for filename in demos:
@@ -166,14 +166,13 @@ def train_cae(args):
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=LR_STEP_SIZE, gamma=LR_GAMMA)
 
     for epoch in range(EPOCH):
-        print("EPOCH:",epoch)
         for batch, x in enumerate(train_set):
             optimizer.zero_grad()
             loss = model(x)
             loss.backward()
             optimizer.step()
         scheduler.step()
-        #rospy.loginfo("epoch: {} loss: {}".format(epoch, loss.item()))
+        print("epoch: {} loss: {}".format(epoch, loss.item()))
         torch.save(model.state_dict(), model_folder + "/" + savename)
 
 def main():
