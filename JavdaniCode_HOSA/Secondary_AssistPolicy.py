@@ -43,7 +43,7 @@ class AssistancePolicy:
 
 
 
-  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=True):
+  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=False):
     assert goal_distribution.size == len(self.goal_assist_policies)
 
     action_dimension = GoalPolicy.TargetPolicy.ACTION_DIMENSION
@@ -54,10 +54,16 @@ class AssistancePolicy:
 
     total_action_twist /= np.sum(goal_distribution)
     #user action is 1x7 joint space
-    to_ret_twist = total_action_twist + self.user_action #linear blend
+    #print(total_action_twist)
+    #print("USER",self.user_action)
+    
+    to_ret_twist = total_action_twist + self.user_action*3 #linear blend
     #print "before magnitude adjustment: " + str(to_ret_twist)
     if fix_magnitude_user_command:
       to_ret_twist *= np.linalg.norm(self.user_action)/np.linalg.norm(to_ret_twist)
+      #print("AHHH BAD COMPUTER")
+    #else:
+      #print("GOOd comppy",to_ret_twist)
     #print "after magnitude adjustment: " + str(to_ret_twist)
 
     return to_ret_twist

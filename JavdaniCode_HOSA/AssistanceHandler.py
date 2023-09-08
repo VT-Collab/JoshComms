@@ -114,7 +114,7 @@ class AdaHandler:
 		# start_pos,start_trans = joint2pose(self.robot_state['q'])
 
 
-		action_scale = 0.1
+		action_scale = 0.025
 		#print(self.robot_state["q"])
 		if direct_teleop_only: 
 			use_assistance = False
@@ -138,13 +138,14 @@ class AdaHandler:
 			if ((end_time - sim_time) > 3.0 and (w_comms == True)):
 				#print("SENT",self.robot_state['q'])
 				send2comms(conn2, self.robot_state['q'])
-				sim_time = time.time()
+				sim_time = time.time	()
 			
 			xdot = [0]*6
 			robot_dof_values = 7
 			#get pose of min value target for user's goal
 			self.robot_state = readState(conn)
 			#ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
+			#print(ee_pos)
 			#print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",transmethods.quaternion_from_matrix(ee_trans[0:4,0:4]))
 			interface = Joystick()
 			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
@@ -190,6 +191,7 @@ class AdaHandler:
 			else:
 				#if left trigger is being hit, direct teleop
 				action = direct_teleop_action
+			#print(action)
 			#print("DIRECT",direct_teleop_action)
 			#print("act",action)
 			#action = self.joint_limit(self.robot_state['q'],action)
@@ -296,7 +298,7 @@ class AdaHandler:
 			#auto_or_noto = 1
 			#print(direct)
 			self.robot_policy.update(self.robot_state, direct_teleop_action)
-			blend_action = self.robot_policy.get_blend_action() #uses in built variables brought by update into maintained class
+			blend_action = self.robot_policy.get_blend_action(goal_distribution=self.robot_policy.goal_predictor.log_goal_distribution) #uses in built variables brought by update into maintained class
 			#print(blend_action,"BLEND")
 			geet_action = self.robot_policy.get_action(fix_magnitude_user_command=fix_magnitude_user_command)#see above
 
