@@ -98,7 +98,7 @@ def train_classifier(args):
     dataset = []
     demos = []
     folder = "forktest"
-    demos = [(parent_folder + "/" + folder + "/" +folder+"_1"+ ".pkl")]
+    demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     true_cnt = 0
     false_cnt = 0
@@ -213,7 +213,7 @@ def train_classifier(args):
     # BATCH_SIZE_TRAIN = int(train_data.__len__() / 5.)
     BATCH_SIZE_TRAIN = 2
     # LR = 0.0001
-    LR = 0.001
+    LR = 0.00025
     LR_STEP_SIZE = 200
     LR_GAMMA = 0.1
 
