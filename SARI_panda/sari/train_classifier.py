@@ -7,6 +7,7 @@ import numpy as np
 import sys# , rospy
 from utils_panda import convert_to_6d,deform
 from panda_env2 import Panda
+import glob
 #from geometry_msgs.msg import Twist
 
 device = "cpu"
@@ -86,7 +87,7 @@ def train_classifier(args):
     panda = Panda()
 
     parent_folder = 'demos'
-    folders = ["forktest"]
+    folders = ["all"]
 
     data_folder = "data"
     model_folder = "models"
@@ -97,8 +98,9 @@ def train_classifier(args):
     #noisesamples = args.noisesamples#5
     dataset = []
     demos = []
-    folder = "forktest"
-    demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
+    folder = "all"
+    demos = glob.glob(parent_folder + "/" + folder + "/" + "**.pkl")
+    # demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     true_cnt = 0
     false_cnt = 0
@@ -209,7 +211,7 @@ def train_classifier(args):
 
     # Training parameters
     # EPOCH = 100
-    EPOCH = 300
+    EPOCH = 500
     # BATCH_SIZE_TRAIN = int(train_data.__len__() / 5.)
     BATCH_SIZE_TRAIN = 2
     # LR = 0.0001

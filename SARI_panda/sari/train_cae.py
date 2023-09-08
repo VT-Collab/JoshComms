@@ -98,8 +98,9 @@ def train_cae(args):
     noisesamples = args.noisesamples#5
     dataset = []
     demos = []
-    folder = "forktest"
-    demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
+    folder = "all"
+    demos = glob.glob(parent_folder + "/" + folder + "/" + "**.pkl")
+    # demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     inverse_fails = 0
     for filename in demos:
@@ -150,7 +151,7 @@ def train_cae(args):
     train_data = MotionData(dataset)
 
     # EPOCH = 100
-    EPOCH = 300
+    EPOCH = 500
     # BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     # LR = 0.0001
