@@ -144,7 +144,7 @@ class AdaHandler:
 			robot_dof_values = 7
 			#get pose of min value target for user's goal
 			self.robot_state = readState(conn)
-			ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
+			#ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
 			#print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",transmethods.quaternion_from_matrix(ee_trans[0:4,0:4]))
 			interface = Joystick()
 			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
@@ -195,7 +195,7 @@ class AdaHandler:
 			#action = self.joint_limit(self.robot_state['q'],action)
 			#print(action)
 			send2robot(conn, action)
-			if not X_pressed  == 0:
+			if X_pressed:
 				send2gripper(conn_gripper, "c")
 				print("closed")
 				time.sleep(0.5)

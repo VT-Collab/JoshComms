@@ -32,11 +32,11 @@ class SimpleEnv():
         self.fork_position = [0.5, -0.3, 0.02]
         self.fork_quaternion = [0.  ,       0.    ,     0.70710678, 0.70710678]
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.fork_poslist = [[0.5, -0.3, 0.075],[0.5, 0.0, 0.25]]
+        self.fork_poslist = [[0.5, -0.3, 0.075],[0.55, 0.0, 0.25]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
-        a = [ 0.65328145, -0.65328151,  0.27059805 ,-0.27059805]
         #print(a)
-        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],a]
+        self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[0.696086, 0.71789723, 0.00630872, 0.00692856]
+]
         self.fork_grasp= [0,1]
         self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
         self.fork.set_position_orientation(self.fork_position, self.fork_quaternion)
@@ -50,7 +50,7 @@ class SimpleEnv():
         self.cup1_position = [0.40, 0.3, 0.05]
         self.cup1_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
-        self.cup1_poslist = [[0.40, 0.3, 0.15]]
+        self.cup1_poslist = [[0.40, 0.3, 0.05]]
         self.cup1_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.cup1.set_position_orientation(self.cup1_position, self.cup1_quaternion)
         self.cup1_grasp = [0]
@@ -63,7 +63,7 @@ class SimpleEnv():
         self.cup2_position = [0.50, 0.35, 0.05]
         self.cup2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
-        self.cup2_poslist = [[0.50, 0.35, 0.15]]
+        self.cup2_poslist = [[0.50, 0.35, 0.05]]
         self.cup2_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.cup2_grasp = [0]
         self.cup2.set_position_orientation(self.cup2_position, self.cup2_quaternion)
@@ -76,7 +76,7 @@ class SimpleEnv():
         self.cup3_position = [0.60, 0.3, 0.05]
         self.cup3_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
-        self.cup3_poslist = [[0.55, 0.3, 0.15]]
+        self.cup3_poslist = [[0.55, 0.3, 0.05]]
         self.cup3_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.cup3_grasp = [0]
         self.cup3.set_position_orientation(self.cup3_position, self.cup3_quaternion)
@@ -108,7 +108,7 @@ class SimpleEnv():
         self.salt_position = [0.5, 0.1, 0.05]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
-        self.salt_poslist = [[0.5, 0.1, 0.1]]
+        self.salt_poslist = [[0.5, 0.1, 0.075]]
         self.salt_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.salt_grasp = [0]
         self.salt.set_position_orientation(self.salt_position, self.salt_quaternion)
@@ -121,7 +121,7 @@ class SimpleEnv():
         self.pepper_position = [0.3, -0.2, 0.05]
         self.pepper_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
-        self.pepper_poslist = [[0.3, -0.2, 0.1]]
+        self.pepper_poslist = [[0.3, -0.2, 0.075]]
         self.pepper_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.pepper_grasp = [0]
         self.pepper.set_position_orientation(self.pepper_position, self.pepper_quaternion)
@@ -134,7 +134,7 @@ class SimpleEnv():
         self.container_position = [0.65, 0.1, 0.05]
         self.container_quaternion = [ 0, 0, 0.7070727, 0.7071408 ]
         #assist pos / pose
-        self.container_poslist = [[0.6, 0.1, 0.10]]
+        self.container_poslist = [[0.6, 0.1, 0.075]]
         self.container_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.container_grasp = [0]
         self.container.set_position_orientation(self.container_position, self.container_quaternion)

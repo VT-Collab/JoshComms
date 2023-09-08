@@ -65,7 +65,7 @@ class AdaAssistancePolicy:
       #if we don't meet confidence function, use direct teleop
       return self.assist_policy.user_action
 
-def blend_confidence_function_prob_diff(goal_distribution, prob_diff_required=0.4):
+def blend_confidence_function_prob_diff(goal_distribution, prob_diff_required=0.25):
   if len(goal_distribution) <= 1:
     return True
 
