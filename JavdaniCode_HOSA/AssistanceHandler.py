@@ -84,7 +84,7 @@ class AdaHandler:
 	# 			use[i] = self.limit_low[i] + .02
 	# 	self.desired['joint_position'] = use
 
-	def execute_policy(self, direct_teleop_only=False, blend_only=TRUE, fix_magnitude_user_command=TRUE, w_comms = True):
+	def execute_policy(self, direct_teleop_only=False, blend_only=TRUE, fix_magnitude_user_command=TRUE, w_comms = True,confVibe= True):
 		#goal_distribution = np.array([0.333, 0.333, 0.333])
 		print('[*] Connecting to low-level controller...')
 		#self.panda = panda()
@@ -121,6 +121,7 @@ class AdaHandler:
 		else:
 			use_assistance = True
 		auto_or_noto = False
+		autoplus = False
 
 		#set the huber constants differently if the robot movement magnitude is fixed to user input magnitude
 		if not direct_teleop_only and fix_magnitude_user_command:
@@ -132,7 +133,7 @@ class AdaHandler:
 		sim_time = 0.0
 		end_time=time.time()
 		left_time = time.time()-2
-		
+		right_time = time.time()-2
 			
 		while True:
 			if ((end_time - sim_time) > 3.0 and (w_comms == True)):
@@ -167,24 +168,40 @@ class AdaHandler:
 			#print(xdot)
 			
 			direct_teleop_action = xdot2qdot(xdot, self.robot_state) #qdot
-			if LeftT and ((end_time-left_time)>.2):
+			if LeftT and ((end_time-left_time)>.4):
 				left_time = time.time()
 				auto_or_noto = not auto_or_noto
 				#if left trigger not being hit, then execute with assistance
 				print("HELPING = ", auto_or_noto)
-			if not direct_teleop_only and auto_or_noto:
-				use_assistance = not use_assistance
+			if RightT and ((end_time-right_time)>.4):
+				right_time = time.time()
+				autoplus = not autoplus
+				print("HELPING Plus = ", autoplus)
+
+			if not direct_teleop_only:
+				
 				#When this updates, it updates assist policy and goal policies
 				self.robot_policy.update(self.robot_state, direct_teleop_action)
-				#send2comms(conn2, self.robot_state['x'])
 
-				if use_assistance and not direct_teleop_only:
+				if confVibe:
+					goal_distribution = self.robot_policy.goal_predictor.get_distribution()
+					print(goal_distribution)
+					max_prob_goal_ind = np.argmax(goal_distribution)
+
+					if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution):
+						interface.rumble(200)
+
+				if auto_or_noto and not direct_teleop_only:
 					#action = self.user_input_mapper.input_to_action(user_input_all, robot_state)
 					#blend vs normal only dictates goal prediction method and use of confidence screening function to decide whether to act.
 					if blend_only:
-						action = self.robot_policy.get_blend_action() #uses in built variables brought by update into maintained class
+						print("AUTOPLUS:",autoplus)
+						if autoplus:
+							action = self.robot_policy.get_blend_action_confident() *.5
+						else:
+							action = self.robot_policy.get_blend_action()*.5#uses in built variables brought by update into maintained class
 					else:
-						action = self.robot_policy.get_action()#see above
+						action = self.robot_policy.get_action()*.5#see above
 				else:
 				#if left trigger is being hit, direct teleop
 					action = direct_teleop_action
@@ -208,6 +225,10 @@ class AdaHandler:
 				time.sleep(0.5)
 			#self.env.step(joint = action,mode = 0)
 			end_time=time.time()
+
+			if START:
+				break
+
 			if end_time-start_time > 300.0:
 				print("DONE DONE DONE")
 				break

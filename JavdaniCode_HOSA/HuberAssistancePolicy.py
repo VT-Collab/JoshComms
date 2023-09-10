@@ -34,9 +34,6 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     self.dist_rotation = QuaternionDistance(self.quat_curr, self.goal_quat)
     
     self.dist_rotation_aftertrans = QuaternionDistance(self.quat_after_trans, self.goal_quat)
-    if np.linalg.norm(self.dist_translation) < .05:
-      if np.linalg.norm(self.dist_rotation) < .2:
-        self.goal.update()
     
     #something about mode switch distance???
 
@@ -125,6 +122,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
       dist_translation = self.dist_translation
 
     if dist_translation <= self.TRANSLATION_DELTA_SWITCH:
+      
       return self.TRANSLATION_QUADRATIC_COST_MULTPLIER_HALF * dist_translation*dist_translation + self.TRANSLATION_CONSTANT_ADD*dist_translation;
     else:
       return self.TRANSLATION_LINEAR_COST_MULT_TOTAL * dist_translation - self.TRANSLATION_LINEAR_COST_SUBTRACT
@@ -139,7 +137,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
       return self.ACTION_APPLY_TIME * (self.TRANSLATION_QUADRATIC_COST_MULTPLIER * dist_translation + self.TRANSLATION_CONSTANT_ADD)
 
   def get_qvalue_translation(self):
-    return self.get_cost_translation() + self.get_value_translation(self.dist_translation_aftertrans)
+    return self.get_cost_translation(self.dist_translation_aftertrans) + self.get_value_translation(self.dist_translation_aftertrans)
 
   
 
@@ -164,7 +162,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
       return self.ACTION_APPLY_TIME * self.ROTATION_MULTIPLIER * (self.ROTATION_QUADRATIC_COST_MULTPLIER * dist_rotation + self.ROTATION_CONSTANT_ADD)
 
   def get_qvalue_rotation(self):
-    return self.get_cost_rotation() + self.get_value_rotation(self.dist_rotation_aftertrans)
+    return self.get_cost_rotation(self.dist_rotation_aftertrans) + self.get_value_rotation(self.dist_rotation_aftertrans)
 
   
 
@@ -181,7 +179,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
   #ROTATION_DELTA_SWITCH = np.pi/7.
   ROTATION_DELTA_SWITCH = np.pi/32. #.0981
   ROTATION_CONSTANT_ADD = 0.05
-  ROTATION_MULTIPLIER = 0.25
+  ROTATION_MULTIPLIER = 0.1
 
   #ROBOT_TRANSLATION_COST_MULTIPLIER = 14.5
   #ROBOT_ROTATION_COST_MULTIPLIER = 0.10

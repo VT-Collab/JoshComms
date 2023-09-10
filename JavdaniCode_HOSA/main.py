@@ -31,8 +31,9 @@ if __name__ == "__main__":
   for i in range(1):
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
+    #print("HOT POTATO")
     ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
-    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=False)
+    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=False,confVibe= True)
     #ada_handler.execute_policy_sim(direct_teleop_only=True, fix_magnitude_user_command=True,w_comms=False)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 

@@ -32,7 +32,7 @@ class SimpleEnv():
         self.fork_position = [0.55, -0.3, 0.02]
         self.fork_quaternion = [0.  ,       0.    ,     0.70710678, 0.70710678]
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.fork_poslist = [[0.55, -0.3, 0.075],[0.45, -0.35, 0.25]]
+        self.fork_poslist = [[0.5, -0.3, 0.075],[0.55, -0.3, 0.2]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
         #print(a)
         self.fork_quatlist = [[1.0  ,       0.    ,     0., 0.],[0.696086, 0.71789723, 0.00630872, 0.00692856]
@@ -91,7 +91,7 @@ class SimpleEnv():
         self.mug_position = [0.45, -0.1, 0.035]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
-        self.mug_poslist = [[0.45, -0.1, 0.075],[0.55, -0.1, 0.25]]
+        self.mug_poslist = [[0.45, -0.1, 0.075],[0.5, -0.1, 0.2]]
         #Orientations: Base Orientation,Mid way to fork pose, Full Fork Pose, Base Orientation  
         self.mug_quatlist = [[1.0  ,       0.    ,     0., 0.],[ 0.738987 ,  -0.00291435 ,-0.6732182 , -0.02582569]]
         self.mug_grasp = [0,1]
