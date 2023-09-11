@@ -1,7 +1,6 @@
-from interface_utils import CommClient, SimpleEnv
+from interface_utils import CommClient, SimpleEnv, GUI_Interface
 from model_utils import Model
 import time
-import torch
 import numpy as np
 import argparse
 from utils_panda import convert_to_6d
@@ -11,6 +10,7 @@ from utils_panda import convert_to_6d
 def main(args):
     client = CommClient(args.ip, args.port)
     env = SimpleEnv(visualize=True)
+    gui = GUI_Interface()
     model = Model(args)
     VIZ_TIME_INTERVAL = 7.0  # seconds, TODO: make this an arg
     VIZ_TIME_LENGTH = 5.0
@@ -42,6 +42,7 @@ def main(args):
                 data["curr_pos_awrap"] = convert_to_6d(np.concatenate(
                     (state["ee_position"], state["ee_euler"])
                 )).tolist()
+                gui.insert(alpha)
 
 
 if __name__ == "__main__":

@@ -2,13 +2,14 @@ import os
 import pickle
 import socket
 import time
+from tkinter import Entry, Label, Tk, END
 
 import numpy as np
+import pybullet as p
+import pybullet_data
 
 from objects import InteractiveObj, RBOObject, YCBObject
 from panda_env2 import Panda
-import pybullet as p
-import pybullet_data
 from tf import *
 
 
@@ -244,3 +245,31 @@ class SimpleEnv:
             nearVal=0.1,
             farVal=100.0,
         )
+
+class GUI_Interface(object):
+    def __init__(self):
+        self.root = Tk()
+        self.root.geometry("+100+100")
+        self.root.title("Uncertainity Output")
+        self.update_time = 0.02
+        self.fg = '#ff0000'
+        self.font = "Palatino Linotype"
+
+        # X_Y Uncertainty
+        self.myLabel1 = Label(self.root, text = "Confidence", font=(self.font, 40))
+        self.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
+        self.textbox1 = Entry(self.root, width = 5, bg = "white", fg=self.fg, borderwidth = 3, font=(font, 40))
+        self.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
+        self.textbox1.insert(0,str(0))
+
+    def configure(self, geometry="+100+100"):
+        self.root.geometry(geometry)
+        self.myLabel1.grid(row = 0, column = 0, pady=50, padx=50)
+        self.root.update()
+        return
+
+    def insert(self, text):
+        self.textbox1.delete(0, END)
+        self.textbox1.insert(0, text)
+        self.root.update()
+        return
