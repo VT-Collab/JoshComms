@@ -212,7 +212,7 @@ class AdaHandler:
 						else:
 							action = self.robot_policy.get_blend_action() #uses in built variables brought by update into maintained class
 					else:
-						action = self.robot_policy.get_action()#see above
+						action = self.robot_policy.get_action()*r_action_scale #see above
 				else:
 				#if left trigger is being hit, direct teleop
 					action = direct_teleop_action
