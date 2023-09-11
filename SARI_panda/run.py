@@ -134,9 +134,10 @@ def run_test(args):
 
     savename = folder + "/" + args.filename + "_" + str(args.run_num) + ".pkl"
 
+    all_data = []
+
     while True:
         while_loop_start_time = time.time()
-        # while not rospy.is_shutdown():
         q = np.asarray(mover.joint_states).tolist()
         curr_pos = mover.joint2pose()
         curr_gripper_pos = mover.robotiq_joint_state()
@@ -145,7 +146,7 @@ def run_test(args):
 
         # Wait for human to start moving
         while np.sum(np.abs(axes)) < 1e-3 and not run_start:
-            axes, gripper, mode, slow, start = joystick.getInput()
+            axes, gripper, mode, assistance_toggle, start = joystick.getInput()
             start_time = time.time()
             assist_time = time.time()
 
@@ -154,18 +155,16 @@ def run_test(args):
             run_start = True
 
         if start:
-            pickle.dump(traj, open(savename, "wb"))
+            pickle.dump(all_data, open(savename, "wb"))
             print("Collected {} datapoints and saved at {}".format(len(traj), savename))
-            mover.switch_controller(mode="position")
-            mover.send_joint(q, 1.0)
-            # return 1 # TODO: fix?
+            return
 
         # switch between translation and rotation
         if mode:
             trans_mode = not trans_mode
             print("Translation Mode: {}".format(trans_mode))
             while mode:
-                axes, gripper, mode, slow, start = joystick.getInput()
+                axes, gripper, mode, assistance_toggle, start = joystick.getInput()
 
         if assistance_toggle:
             assist = not assist
@@ -195,13 +194,13 @@ def run_test(args):
         if gripper and (mover.robotiq_joint_state() > 0):
             mover.actuate_gripper(gripper_ac, 1, 0.0)
             while gripper:
-                axes, gripper, mode, slow, start = joystick.getInput()
+                axes, gripper, mode, assistance_toggle, start = joystick.getInput()
 
         elif gripper and (mover.robotiq_joint_state() == 0):
             gripper_ac = 1
             mover.actuate_gripper(gripper_ac, 1, 0)
             while gripper:
-                axes, gripper, mode, slow, start = joystick.getInput()
+                axes, gripper, mode, assistance_toggle, start = joystick.getInput()
 
         curr_pos_awrap = convert_to_6d(curr_pos)
 
@@ -262,6 +261,7 @@ def run_test(args):
 
         # rate.sleep()
         time.sleep(max(while_loop_start_time - time.time() + rate_s, 0.0))
+        all_data.append(data)
 
 
 def main():
