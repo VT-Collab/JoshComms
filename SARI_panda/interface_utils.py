@@ -1,22 +1,24 @@
-import socket
 import os
+import pickle
+import socket
+import time
+
 import numpy as np
+
+from objects import InteractiveObj, RBOObject, YCBObject
+from panda_env2 import Panda
 import pybullet as p
 import pybullet_data
-from panda_env2 import Panda
-from objects import YCBObject, InteractiveObj, RBOObject
 from tf import *
-import time
-import pickle
 
 
-class VizClass(object):
-    """Parent class of VizClient, VizServer. Connects to a port via socket
+class CommClass(object):
+    """Parent class of CommClient, CommServer. Connects to a port via socket
     library for advertising / listening"""
 
     def __init__(self, ip, port=8000):
         """
-        Initializes the VizClass. Note that the initialization may hang as the
+        Initializes the CommClass. Note that the initialization may hang as the
         object waits for a connection via `self.connect2comms`.
 
         Parameters:
@@ -52,8 +54,8 @@ class VizClass(object):
         return conn, addr
 
 
-class VizServer(VizClass):
-    """This child of VizClass can send comms, but cannot receive."""
+class CommServer(CommClass):
+    """This child of CommClass can send comms, but cannot receive."""
 
     def send2comms(self, msg):
         """sends an arbitrary message via socket
@@ -81,13 +83,13 @@ class VizServer(VizClass):
         return self.send(*args)
 
 
-class VizClient(VizClass):
-    """Child class of VizClass, can only listen to comms, cannot send."""
+class CommClient(CommClass):
+    """Child class of CommClass, can only listen to comms, cannot send."""
 
     def __init__(self, ip, port):
-        """Initializes VizClient object. Note that this initialization may hang
+        """Initializes CommClient object. Note that this initialization may hang
         as the socket connection is estabilished. As opposed to the parent
-        class `VizClass`, `self.conn` and `self.addr` are not initialized
+        class `CommClass`, `self.conn` and `self.addr` are not initialized
         here
 
         Parameters:
@@ -135,6 +137,12 @@ class VizClient(VizClass):
 
 
 class SimpleEnv:
+    """
+    A simple pybullet environment to use for visualization and sim.
+    Note that this is flipped 180 deg from the real world setup:
+    multiply (x, y) by -1 to mimic the visualization of the real world.
+    """
+
     def __init__(self, visualize=False):
         self.urdfRootPath = pybullet_data.getDataPath()
         print(self.urdfRootPath)

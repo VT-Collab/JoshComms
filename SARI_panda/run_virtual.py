@@ -10,7 +10,7 @@ from utils_panda import (
 )
 from model_utils import Model
 
-from viz import SimpleEnv
+from interface_utils import SimpleEnv
 
 
 class FakeJoystickControl:

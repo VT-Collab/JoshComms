@@ -1,4 +1,4 @@
-from viz import VizClient, SimpleEnv
+from interface_utils import CommClient, SimpleEnv
 from model_utils import Model
 import time
 import torch
@@ -9,7 +9,7 @@ from utils_panda import convert_to_6d
 
 # runs visualization suite on the client side
 def main(args):
-    client = VizClient(args.ip, args.port)
+    client = CommClient(args.ip, args.port)
     env = SimpleEnv(visualize=True)
     model = Model(args)
     VIZ_TIME_INTERVAL = 7.0  # seconds, TODO: make this an arg

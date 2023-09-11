@@ -18,7 +18,7 @@ from utils_panda import (
 from model_utils import Model
 
 # from comms_client import connect2comms, send2comms
-from viz import VizServer
+from interface_utils import CommServer
 
 """ TODO
 - Add event logging
@@ -34,14 +34,14 @@ class TrajectoryClient:
     def _blocking_get_states(self):
         state = readState(self.conn)  # should this be used?
         self.state = state
-        self.joint_states = state['q']
+        self.joint_states = state["q"]
         return state
 
     def _lazy_get_states(self):
         state = listen2robot(self.conn)
         if state is not None:
             self.state = state
-            self.joint_states = state['q']
+            self.joint_states = state["q"]
         return self.state
 
     def _joint_to_pose(self, q):
@@ -80,21 +80,24 @@ class TrajectoryClient:
 
 
 def run_test(args):
-    # mover = TrajectoryClient()
     joystick = JoystickControl()
     mover = TrajectoryClient()
 
     rate_hz = 100
     rate_s = 1 / rate_hz
 
-    visualize = not args.noviz
+    interface = args.interface
+    use_visual = interface == "visual" or interface == "both"
+    use_rumble = interface == "rumble" or interface == "both"
+
     viz_server = None
-    if visualize:
-        viz_server = VizServer(args.ip, args.port)
+    rumble_server = None
+    if use_visual:
+        viz_server = CommServer(args.ip, args.viz_port)
+    if use_rumble:
+        rumble_server = CommServer(args.ip, args.rumble_port)
 
     model = Model(args)
-
-
 
     start_pos = None
     start_q = None
@@ -135,10 +138,7 @@ def run_test(args):
         while_loop_start_time = time.time()
         # while not rospy.is_shutdown():
         q = np.asarray(mover.joint_states).tolist()
-        # print("q", q)
-        # print("js", mover.joint_states)
         curr_pos = mover.joint2pose()
-        # print("curr_pos", curr_pos)
         curr_gripper_pos = mover.robotiq_joint_state()
 
         axes, gripper, mode, slow, start = joystick.getInput()
@@ -157,9 +157,8 @@ def run_test(args):
             pickle.dump(traj, open(savename, "wb"))
             print("Collected {} datapoints and saved at {}".format(len(traj), savename))
             mover.switch_controller(mode="position")
-            # print("q", q)
             mover.send_joint(q, 1.0)
-            return 1
+            return 1 # TODO: fix?
 
         # switch between translation and rotation
         if mode:
@@ -168,7 +167,6 @@ def run_test(args):
             while mode:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
-        # Toggle speed of robot
         if slow:
             slow_mode = not slow_mode
             print("Slow Mode: {}".format(trans_mode))
@@ -197,7 +195,6 @@ def run_test(args):
             xdot_h[3:] = rot_vel.T[:]
 
         qdot_h = mover.xdot2qdot(xdot_h)
-        # qdot_h = qdot_h.tolist()[0]
         qdot_h = qdot_h.tolist()
 
         qdot_r = [0] * 6
@@ -234,40 +231,32 @@ def run_test(args):
         data["a_human"] = xdot_h.tolist()
         data["a_robot"] = xdot_r  # .tolist()
 
-
         xdot_r = mover.xdot2qdot(xdot_r)
         qdot_r = 2.0 * xdot_r
-        # qdot_r = qdot_r.tolist()[0]
         qdot_r = qdot_r.tolist()
 
         curr_time = time.time()
-        # show visualization
 
-        if visualize and (curr_time - prev_viz_time) >= VIZ_TIME_INTERVAL:
+        if use_visual and (curr_time - prev_viz_time) >= VIZ_TIME_INTERVAL:
             viz_server.send(data)
             prev_viz_time = curr_time
+
+        if use_rumble:
+            rumble_server.send(alpha)
 
         if curr_time - assist_time >= assist_start and not assist:
             print("Assistance started")
             assist = True
 
         if assist:
-            # sac method uses an interval between assistance times
-            # if args.method != "ours" :
-
             qdot = None
             if alpha > 0.3:
-                qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(qdot_h)
+                qdot = alpha * 1.0 * np.asarray(qdot_r) + (1 - alpha) * np.asarray(
+                    qdot_h
+                )
                 qdot = qdot.tolist()
             else:
                 qdot = qdot_h
-
-            # print("qdot", qdot)
-            # print("qdot_r", qdot_r)
-            # print("qdot_h", qdot_h)
-            # print("alpha", alpha)
-        else:
-            qdot = qdot_h
 
         data["curr_time"] = curr_time
         data["assist"] = assist
@@ -301,7 +290,8 @@ def main():
         "--filename", type=str, help="Savename for data (default:test)", default="test"
     )
     parser.add_argument("--ip", type=str, help="IP to use", default="127.0.0.1")
-    parser.add_argument("--port", type=int, help="Port to use", default=8642)
+    parser.add_argument("--viz_port", type=int, help="Port to use for viz", default=8642)
+    parser.add_argument("--rumble_port", type=int, help="Port to use for rumble", default=8641)
     parser.add_argument(
         "--run-num", type=int, help="run number to save data (default:0)", default=0
     )
@@ -312,7 +302,12 @@ def main():
         help="method to use (default:sari)",
         default="sari",
     )
-    parser.add_argument("--noviz", action="store_true")
+    parser.add_argument(
+        "--interface",
+        type=str,
+        choices=["none", "rumble", "visual", "both"],
+        default="none",
+    )
     args = parser.parse_args()
     print(args)
     run_test(args)

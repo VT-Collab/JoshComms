@@ -18,7 +18,7 @@ class Model(object):
     def __init__(self, args):
         self.args = args
         # tasks = ["place", "pour", "stir"]
-        tasks = ["forktest"]
+        tasks = ["all"]
         cae_name = "sari/models/cae_" + "_".join(tasks[: self.args.n_intents])
         class_name = "sari/models/class_" + "_".join(tasks[: self.args.n_intents])
         print(cae_name)
