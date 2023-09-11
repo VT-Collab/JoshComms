@@ -64,7 +64,7 @@ class TrajectoryClient:
         self.mode = mode
 
     def send_joint(self, q, lim):
-        send2robot(self.conn, qdot, limit=lim)
+        send2robot(self.conn, q, limit=lim)
         return
 
     def actuate_gripper(self, *args):
@@ -141,7 +141,7 @@ def run_test(args):
         curr_pos = mover.joint2pose()
         curr_gripper_pos = mover.robotiq_joint_state()
 
-        axes, gripper, mode, slow, start = joystick.getInput()
+        axes, gripper, mode, assistance_toggle, start = joystick.getInput()
 
         # Wait for human to start moving
         while np.sum(np.abs(axes)) < 1e-3 and not run_start:
@@ -158,7 +158,7 @@ def run_test(args):
             print("Collected {} datapoints and saved at {}".format(len(traj), savename))
             mover.switch_controller(mode="position")
             mover.send_joint(q, 1.0)
-            return 1 # TODO: fix?
+            # return 1 # TODO: fix?
 
         # switch between translation and rotation
         if mode:
@@ -167,18 +167,10 @@ def run_test(args):
             while mode:
                 axes, gripper, mode, slow, start = joystick.getInput()
 
-        if slow:
-            slow_mode = not slow_mode
-            print("Slow Mode: {}".format(trans_mode))
-            while slow:
-                axes, gripper, mode, slow, start = joystick.getInput()
+        if assistance_toggle:
+            assist = not assist
+            print("Toggling assistance: ", assist)
 
-        if slow_mode:
-            scaling_trans = 0.1
-            scaling_rot = 0.2
-        else:
-            scaling_trans = 0.2
-            scaling_rot = 0.4
 
         xdot_h = np.zeros(6)
         if trans_mode:
@@ -257,6 +249,8 @@ def run_test(args):
                 qdot = qdot.tolist()
             else:
                 qdot = qdot_h
+        else:
+            qdot = np.asarray(qdot_h)
 
         data["curr_time"] = curr_time
         data["assist"] = assist
