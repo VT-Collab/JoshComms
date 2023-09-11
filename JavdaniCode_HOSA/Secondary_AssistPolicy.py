@@ -56,8 +56,8 @@ class AssistancePolicy:
     #user action is 1x7 joint space
     #print(total_action_twist)
     #print("USER",self.user_action)
-    
-    to_ret_twist = total_action_twist + self.user_action*3 #linear blend
+    use = [item * 3 for item in self.user_action]
+    to_ret_twist = total_action_twist + use #linear blend
     #print "before magnitude adjustment: " + str(to_ret_twist)
     if fix_magnitude_user_command:
       to_ret_twist *= np.linalg.norm(self.user_action)/np.linalg.norm(to_ret_twist)

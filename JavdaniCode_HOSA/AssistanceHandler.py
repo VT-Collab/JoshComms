@@ -113,8 +113,15 @@ class AdaHandler:
 		# start_state = self.robot_state
 		# start_pos,start_trans = joint2pose(self.robot_state['q'])
 
+		GUI_1 = GUI_Interface()
+		GUI_1.root.geometry("+100+100")
+		GUI_1.myLabel1 = Label(GUI_1.root, text = "Confidence", font=("Palatino Linotype", 40))
+		GUI_1.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
+		GUI_1.root.update()
 
-		action_scale = 0.025
+
+		action_scale = 0.05
+		r_action_scale = .1
 		#print(self.robot_state["q"])
 		if direct_teleop_only: 
 			use_assistance = False
@@ -136,22 +143,13 @@ class AdaHandler:
 		right_time = time.time()-2
 			
 		while True:
-			if ((end_time - sim_time) > 3.0 and (w_comms == True)):
-				#print("SENT",self.robot_state['q'])
-				send2comms(conn2, self.robot_state['q'])
-				sim_time = time.time	()
-			
 			xdot = [0]*6
 			robot_dof_values = 7
 			#get pose of min value target for user's goal
 			self.robot_state = readState(conn)
-			#ee_pos,ee_trans = joint2pose(self.robot_state['q'])  
-			#print(ee_pos)
-			#print("ABAAAAAAAAAAAAAAAAAAAAAAAAAAAA",transmethods.quaternion_from_matrix(ee_trans[0:4,0:4]))
+
 			interface = Joystick()
 			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
-			
-			#print("buttons",A_pressed, START, B_pressed)
 
 			if A_pressed:
 				xdot[3] = -action_scale * z[0]
@@ -161,11 +159,9 @@ class AdaHandler:
 				xdot[0] = -action_scale * z[1]
 				xdot[1] = -action_scale * z[0]
 				xdot[2] = -action_scale * z[2]
-			#print(xdot)
-			if STOP:
-				print("[*] Done!")
-				return True
-			#print(xdot)
+
+
+
 			
 			direct_teleop_action = xdot2qdot(xdot, self.robot_state) #qdot
 			if LeftT and ((end_time-left_time)>.4):
@@ -177,17 +173,43 @@ class AdaHandler:
 				right_time = time.time()
 				autoplus = not autoplus
 				print("HELPING Plus = ", autoplus)
-
+			
 			if not direct_teleop_only:
 				
 				#When this updates, it updates assist policy and goal policies
 				self.robot_policy.update(self.robot_state, direct_teleop_action)
+				
+				goal_distribution = self.robot_policy.goal_predictor.get_distribution()
+				log_goal_distribution = self.robot_policy.goal_predictor.log_goal_distribution
+				#print(goal_distribution)
+				max_prob_goal_ind = np.argmax(goal_distribution)
+				goals = self.goals
+				curr_goal = goals[max_prob_goal_ind]
+				name = curr_goal.name
+				if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution):
+					GUI_1.fg = '#00ff00'
+					GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+					GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
+				else:
+					GUI_1.fg = '#ff0000'
+					GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+					GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
 
+				GUI_1.textbox1.delete(0, END)
+				GUI_1.textbox1.insert(0, name)
+				GUI_1.root.update()
+				#print(goal_distribution[max_prob_goal_ind])
+
+				if ((end_time - sim_time) > 3.0 and (w_comms == True)):
+					use = np.append(self.robot_state['q'],log_goal_distribution)
+					#print("SENT",self.robot_state['q'])
+					#print("SENT",np.shape(log_goal_distribution))
+					send2comms(conn2, use)
+					sim_time = time.time()
+					
+				#print(name,goal_distribution)
 				if confVibe:
-					goal_distribution = self.robot_policy.goal_predictor.get_distribution()
-					print(goal_distribution)
-					max_prob_goal_ind = np.argmax(goal_distribution)
-
+					#print()
 					if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution):
 						interface.rumble(200)
 
@@ -195,25 +217,21 @@ class AdaHandler:
 					#action = self.user_input_mapper.input_to_action(user_input_all, robot_state)
 					#blend vs normal only dictates goal prediction method and use of confidence screening function to decide whether to act.
 					if blend_only:
-						print("AUTOPLUS:",autoplus)
+						#print("AUTOPLUS:",autoplus)
 						if autoplus:
-							action = self.robot_policy.get_blend_action_confident() *.5
+							action = self.robot_policy.get_blend_action_confident() *r_action_scale 
 						else:
-							action = self.robot_policy.get_blend_action()*.5#uses in built variables brought by update into maintained class
+							action = self.robot_policy.get_blend_action()*r_action_scale #uses in built variables brought by update into maintained class
 					else:
-						action = self.robot_policy.get_action()*.5#see above
+						action = self.robot_policy.get_action()*r_action_scale #see above
 				else:
 				#if left trigger is being hit, direct teleop
 					action = direct_teleop_action
 			else:
-				#if left trigger is being hit, direct teleop
 				action = direct_teleop_action
-			#print(action)
-			#print("DIRECT",direct_teleop_action)
-			#print("act",action)
-			#action = self.joint_limit(self.robot_state['q'],action)
-			#print(action)
+
 			send2robot(conn, action)
+			end_time=time.time()
 			if X_pressed:
 				send2gripper(conn_gripper, "c")
 				print("closed")
@@ -224,10 +242,9 @@ class AdaHandler:
 				send2gripper(conn_gripper, "o")
 				time.sleep(0.5)
 			#self.env.step(joint = action,mode = 0)
-			end_time=time.time()
-
-			if START:
-				break
+			if STOP:
+				print("[*] Done!")
+				return True
 
 			if end_time-start_time > 300.0:
 				print("DONE DONE DONE")

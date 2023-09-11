@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 from AssistanceHandler import *
-import copy
+
 from Utils import *
 from Primary_AssistPolicy import *
 from UserBot import *
@@ -45,22 +45,7 @@ def send2comms(conn, msg, limit=1.0):
 	#send_msg = "s," + send_msg + ","
 	conn.send(send_msg.encode())
 
-class GUI_Interface(object):
-	def __init__(self):
-		self.root = Tk()
-		self.root.geometry("+100+100")
-		self.root.title("Uncertainity Output")
-		self.update_time = 0.02
-		self.fg = '#ff0000'
-		font = "Palatino Linotype"
 
-		# X_Y Uncertainty
-		self.myLabel1 = Label(self.root, text = "Confidence", font=(font, 40))
-		self.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
-		self.textbox1 = Entry(self.root, width = 5, bg = "white", fg=self.fg, borderwidth = 3, font=(font, 40))
-		self.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
-		self.textbox1.insert(0,0)
-				
 def main():
 
 	print("initializing test environment")
@@ -79,69 +64,53 @@ def main():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.connect(('127.0.0.1', PORT_comms)) #White Box
-	#s.connect(('192.168.1.3', PORT_comms)) #White Box
-	#s.connect(('192.168.1.57', PORT_comms)) #Josh laptop
 	interface = Joystick()
 
 
 	run_time =3 #how long each run should go for
 	#Make first trajectory
 	qdot = [0]*7
-	perc_cutoff = .4
-
 	#
 	MaxConf = 0.00
-	# GUI_1 = GUI_Interface()
-	# GUI_1.textbox1.delete(0, END)
-	# GUI_1.textbox1.insert(0, round(MaxConf, 2))
-	# GUI_1.root.geometry("+100+100")
-	# GUI_1.myLabel1 = Label(GUI_1.root, text = "Confidence", font=("Palatino Linotype", 40))
-	# GUI_1.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
-	# GUI_1.root.update()
 
 	print("Full Cycle")
 	a = time.time() 
 	while True:
 		msg = str(s.recv(2048))[2:-2]
 		if len(msg)>1:
-			copyuse = copy.deepcopy(ada_handler)
+			#msg=msg.replace(","," ")
+			msg=msg.replace("\\n" , "" )
+			#msg=msg.replace("n","")
 			b = time.time() 
 			#print(abs(a-b))
 			state_str = np.array(list(map(float, (msg.split(",")) [1:8])),dtype = DoubleVar) #currently accepts a string and outputs a double converted array.
+			log_goal_distribution= np.array(list(map(float, (msg.split(",")) [8:18])),dtype = DoubleVar)
 			#reset panda to transmitted position
 			env.panda.reset((state_str))
 			ada_handler.robot_policy.update(env.panda.state, qdot)
+			ada_handler.robot_policy.goal_predictor.log_goal_distribution = list(log_goal_distribution)	
+
+
 			goal_distribution = ada_handler.robot_policy.goal_predictor.get_distribution()
 			max_prob_goal_ind = np.argmax(goal_distribution)
 			curr_goal = goals[max_prob_goal_ind]
 			name = curr_goal.name
-			print(name,goal_distribution)
-			goal_distribution_sorted = np.sort(goal_distribution)
+			#print(name,goal_distribution)	
+			#goal_distribution_sorted = np.sort(goal_distribution)
 
-			MaxConf = goal_distribution_sorted[	-1]
+			MaxConf = goal_distribution[max_prob_goal_ind]
 			
 			
-		#if (MaxConf-goal_distribution_sorted[-2] > perc_cutoff):
-			#Gui
-			# GUI_1.textbox1.delete(0, END)
-			# GUI_1.textbox1.insert(0, round(MaxConf, 1))
-			# GUI_1.root.update()
-			#While time running < 5s, run update loop of blending. 
+			#While time running < runtime, run update loop of blending. 
 			while(abs(a-b)<run_time):
 				a = time.time()
 				#update internal handler policy and retrieve action
-				copyuse.robot_policy.update(env.panda.state, qdot)
-				action = copyuse.robot_policy.get_blend_action_confident()*3
-				#step the panda environment
-				#print("running",action)
+				ada_handler.robot_policy.update(env.panda.state, qdot)
+				action = ada_handler.robot_policy.get_blend_action_confident()*3
 				env.step(joint = action,mode = 0)
 			while(abs(a-b)<(run_time+1)):
 				a = time.time()
 			print("DONE A RUN")
-			#else:
-				# GUI_1.textbox1.delete(0, END)
-				# GUI_1.textbox1.insert(0, round(MaxConf, 1))
-				# GUI_1.root.update()
 	return -1
 
 			#Then do pull in next reset input and wait until time run > 7s

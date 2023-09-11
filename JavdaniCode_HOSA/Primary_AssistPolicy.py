@@ -24,7 +24,7 @@ class AdaAssistancePolicy:
     self.assist_policy.update(robot_state, user_action)
     
     values,q_values = self.assist_policy.get_values()
-    
+    #print("")
     self.goal_predictor.update_distribution(values, q_values)
     self.robot_state = robot_state
 
@@ -48,7 +48,7 @@ class AdaAssistancePolicy:
     
     if goal_distribution.size == 0:
       goal_distribution = self.goal_predictor.get_distribution()
-    print(goal_distribution)
+    #print(goal_distribution)
     max_prob_goal_ind = np.argmax(goal_distribution)
     
     #check if we meet the confidence criteria which dictates whether or not assistance is provided
@@ -82,7 +82,7 @@ class AdaAssistancePolicy:
     #print("Q",assisted_qdot)
     return assisted_qdot
 
-  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.35):
+  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.3):
     if len(goal_distribution) <= 1:
       print("FAILURE")
       return True
