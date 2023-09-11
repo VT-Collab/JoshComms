@@ -13,7 +13,7 @@ class GoalPredictor(object):
 
 
   def update_distribution(self, values, q_values):
-    self.log_goal_distribution -= q_values - values
+    self.log_goal_distribution +=  values- q_values
     self.normalize_log_distribution()
 
   def normalize_log_distribution(self):

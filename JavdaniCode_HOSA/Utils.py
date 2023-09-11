@@ -221,7 +221,7 @@ class Joystick(object):
     curr_time = time.time()
     z1 = self.gamepad.get_axis(0)
     z2 = self.gamepad.get_axis(1)
-    z3 = self.gamepad.get_axis(3)
+    z3 = self.gamepad.get_axis(4)
     if abs(z1) < self.deadband:
       z1 = 0.0
     if abs(z2) < self.deadband:
@@ -277,37 +277,38 @@ def Init_Goals(env, robot, randomize_goal_init=False):
     
     #fork
     for i in range(len(env.fork_details['grasp'])):
-        fork1 = {'obj':env.fork,'grasp':env.fork_grasp[i],'positions':env.fork_poslist[i],'quats':env.fork_quatlist[i]}
+        fork1 = {'obj':env.fork,'grasp':env.fork_grasp[i],'name': env.fork_name[i],'positions':env.fork_poslist[i],'quats':env.fork_quatlist[i]}
         goal_objects.append(fork1)
     
     #Cups
     for i in range(len(env.cup1_details['grasp'])):
-        cup1 = {'obj':env.cup1,'grasp':env.cup1_grasp[i],'positions':env.cup1_poslist[i],'quats':env.cup1_quatlist[i]}
+        cup1 = {'obj':env.cup1,'grasp':env.cup1_grasp[i],'name': env.cup1_name[i],'positions':env.cup1_poslist[i],'quats':env.cup1_quatlist[i]}
         goal_objects.append(cup1)
     for i in range(len(env.cup2_details['grasp'])):
-        cup2 = {'obj':env.cup2,'grasp':env.cup2_grasp[i],'positions':env.cup2_poslist[i],'quats':env.cup2_quatlist[i]}
+        cup2 = {'obj':env.cup2,'grasp':env.cup2_grasp[i],'name': env.cup2_name[i],'positions':env.cup2_poslist[i],'quats':env.cup2_quatlist[i]}
         goal_objects.append(cup2)
     for i in range(len(env.cup3_details['grasp'])):
-        cup3 = {'obj':env.cup3,'grasp':env.cup3_grasp[i],'positions':env.cup3_poslist[i],'quats':env.cup3_quatlist[i]}
+        cup3 = {'obj':env.cup3,'grasp':env.cup3_grasp[i],'name': env.cup3_name[i],'positions':env.cup3_poslist[i],'quats':env.cup3_quatlist[i]}
         goal_objects.append(cup3)
 
     #Mug
     for i in range(len(env.mug_details['grasp'])):
-        mug = {'obj':env.mug,'grasp':env.mug_grasp[i],'positions':env.mug_poslist[i],'quats':env.mug_quatlist[i]}
+        mug = {'obj':env.mug,'grasp':env.mug_grasp[i],'name': env.mug_name[i],'positions':env.mug_poslist[i],'quats':env.mug_quatlist[i]}
         #print("IM GONNA MUG YOU:", env.mug_quatlist[i])
         goal_objects.append(mug)
 
     #Salt+Pepper and container
     for i in range(len(env.salt_details['grasp'])):
-        salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
+        salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'name': env.salt_name[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
         goal_objects.append(salt)
 
     for i in range(len(env.pepper_details['grasp'])):
-        pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}
+        pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'name': env.pepper_name[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}
         goal_objects.append(pepper)
 
     for i in range(len(env.container_details['grasp'])):
-        container = {'obj':env.container,'grasp':env.container_grasp[i],'positions':env.container_poslist[i],'quats':env.container_quatlist[i]}
+
+        container = {'obj':env.container,'grasp':env.container_grasp[i],'name': env.container_name[i],'positions':env.container_poslist[i],'quats':env.container_quatlist[i]}
         goal_objects.append(container)
 
     # if randomize_goal_init:
@@ -347,6 +348,7 @@ def goal_from_object(env,obj):
   manip = env.panda
   pos = obj['positions']
   quat = obj['quats']
+  name = obj['name']
   #print(pose)
   #print("OPOS",pos)
   ik_sol = manip._inverse_kinematics(pos, quat)
@@ -354,17 +356,18 @@ def goal_from_object(env,obj):
   target_iks.append(ik_sol)
   #print("ik_sol")
   #print(ik_sol)
-  return Goal(quat,pos ,grasp=obj['grasp'], target_poses = target_poses, target_iks = target_iks)
+  return Goal(quat,pos ,grasp=obj['grasp'], name=name,target_poses = target_poses, target_iks = target_iks)
 
 
 class Goal: 
     
-    def __init__(self, pose,pos, grasp,target_poses = list(), target_iks = list()):
+    def __init__(self, pose,pos, grasp,name,target_poses = list(), target_iks = list()):
       self.pose = pose
       self.quat = pose
       self.goal_num = 0
       self.pos = list(pos)
       self.grasp= grasp
+      self.name = name
       if not target_poses:
         target_poses.append(pose)
 
@@ -396,3 +399,19 @@ class Goal:
       self.goal_num += 1
 
 
+class GUI_Interface(object):
+	def __init__(self):
+		self.root = Tk()
+		self.root.geometry("+100+100")
+		self.root.title("Uncertainity Output")
+		self.update_time = 0.02
+		self.fg = '#ff0000'
+		font = "Palatino Linotype"
+
+		# X_Y Uncertainty
+		self.myLabel1 = Label(self.root, text = "Object", font=(font, 40))
+		self.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
+		self.textbox1 = Entry(self.root, width = 8, bg = "white", fg=self.fg, borderwidth = 3, font=(font, 40))
+		self.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
+		self.textbox1.insert(0,0)
+				

@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 from AssistanceHandler import *
-
+import copy
 from Utils import *
 from Primary_AssistPolicy import *
 from UserBot import *
@@ -13,7 +13,7 @@ def listen2comms(PORT):
 	
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.connect(('192.168.1.26', PORT))
+	s.connect(('127.0.0.1', PORT))
 	#s.connect(('172.16.0.3', PORT))
 	#state_length = 7 + 7 + 7 + 6 + 42
 	message = str(s.recv(2048))[2:-2]
@@ -29,7 +29,7 @@ def listen2comms(PORT):
 def connect2comms(PORT):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.bind(('192.168.1.26', PORT))
+	s.bind(('127.0.0.1', PORT))
 	#s.bind(('172.16.0.3', PORT))
 	s.listen()
 	conn, addr = s.accept()
@@ -78,7 +78,7 @@ def main():
 	PORT_comms = 8642 #Randomly picked port for use, can be changed
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.connect(('172.16.0.3', PORT_comms)) #White Box
+	s.connect(('127.0.0.1', PORT_comms)) #White Box
 	#s.connect(('192.168.1.3', PORT_comms)) #White Box
 	#s.connect(('192.168.1.57', PORT_comms)) #Josh laptop
 	interface = Joystick()
@@ -104,6 +104,7 @@ def main():
 	while True:
 		msg = str(s.recv(2048))[2:-2]
 		if len(msg)>1:
+			copyuse = copy.deepcopy(ada_handler)
 			b = time.time() 
 			#print(abs(a-b))
 			state_str = np.array(list(map(float, (msg.split(",")) [1:8])),dtype = DoubleVar) #currently accepts a string and outputs a double converted array.
@@ -111,9 +112,13 @@ def main():
 			env.panda.reset((state_str))
 			ada_handler.robot_policy.update(env.panda.state, qdot)
 			goal_distribution = ada_handler.robot_policy.goal_predictor.get_distribution()
-			
+			max_prob_goal_ind = np.argmax(goal_distribution)
+			curr_goal = goals[max_prob_goal_ind]
+			name = curr_goal.name
+			print(name,goal_distribution)
 			goal_distribution_sorted = np.sort(goal_distribution)
-			MaxConf = goal_distribution_sorted[-1]
+
+			MaxConf = goal_distribution_sorted[	-1]
 			
 			
 		#if (MaxConf-goal_distribution_sorted[-2] > perc_cutoff):
@@ -125,10 +130,10 @@ def main():
 			while(abs(a-b)<run_time):
 				a = time.time()
 				#update internal handler policy and retrieve action
-				ada_handler.robot_policy.update(env.panda.state, qdot)
-				action = ada_handler.robot_policy.get_action()
+				copyuse.robot_policy.update(env.panda.state, qdot)
+				action = copyuse.robot_policy.get_blend_action_confident()*3
 				#step the panda environment
-				print("running",action)
+				#print("running",action)
 				env.step(joint = action,mode = 0)
 			while(abs(a-b)<(run_time+1)):
 				a = time.time()
