@@ -37,7 +37,13 @@ def main(args):
             start_time = time.time()
             while start_time + VIZ_TIME_LENGTH > time.time():
                 alpha, action = model.get_params(data)
-                state, _, _, _ = env.step(joint=action, mode=0, grasp=False)
+                # note that the action needs to be flipped, the sim is backwards
+                action[0] = -action[0] # x
+                action[1] = -action[1] # y
+                env.panda.read_jacobian()
+                J_pinv = np.linalg.pinv(env.panda.state["J"])
+                qdot = J_pinv @ np.asarray(action)
+                state, _, _, _ = env.step(joint=qdot, mode=0, grasp=False)
                 data["q"] = state["q"][0:len(data["q"])].tolist()
                 data["curr_pos_awrap"] = convert_to_6d(np.concatenate(
                     (state["ee_position"], state["ee_euler"])
