@@ -11,6 +11,7 @@ def main(args):
     client = CommClient(args.ip, args.port)
     env = SimpleEnv(visualize=True)
     gui = GUI_Interface()
+    gui.configure()
     model = Model(args)
     VIZ_TIME_INTERVAL = 7.0  # seconds, TODO: make this an arg
     VIZ_TIME_LENGTH = 5.0
