@@ -87,7 +87,8 @@ def train_classifier(args):
     panda = Panda()
 
     parent_folder = 'demos'
-    folders = ["all"]
+    folders = ["demo_fork", "demo_cups", "demo_mug", "demo_shakers"]
+    folders = [folders[args.folder_to_use]]
 
     data_folder = "data"
     model_folder = "models"
@@ -98,9 +99,8 @@ def train_classifier(args):
     #noisesamples = args.noisesamples#5
     dataset = []
     demos = []
-    folder = "all"
-    demos = glob.glob(parent_folder + "/" + folder + "/**/*.pkl")
-    print(demos)
+    # folder = "all"
+    # demos = glob.glob(parent_folder + "/" + folder + "/**/*.pkl")
     # demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
     true_cnt = 0
@@ -110,7 +110,7 @@ def train_classifier(args):
 
     for folder in folders:
         #rospy.loginfo("Generating deformations for task : {}".format(folder))
-        #demos = glob(parent_folder + "/" + folder + "/*.pkl")
+        demos = glob.glob(parent_folder + "/" + folder + "/*.pkl")
         for filename in demos:
             demo = pickle.load(open(filename, "rb"))
 
@@ -212,11 +212,11 @@ def train_classifier(args):
 
     # Training parameters
     # EPOCH = 100
-    EPOCH = 500
+    EPOCH = 300
     # BATCH_SIZE_TRAIN = int(train_data.__len__() / 5.)
     BATCH_SIZE_TRAIN = 2
     # LR = 0.0001
-    LR = 0.00025
+    LR = 0.0001
     LR_STEP_SIZE = 200
     LR_GAMMA = 0.1
 
@@ -262,6 +262,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-tasks", type=int, help="number of tasks to use", default=1)
     parser.add_argument("--deforms", type=int, help="number of deformations per demo", default=1)
+    parser.add_argument("--folder-to-use", type=int, help="which folder should \
+                        we use for one by one training", default=0)
     args = parser.parse_args()
     train_classifier(args)
 

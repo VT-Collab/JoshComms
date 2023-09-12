@@ -89,7 +89,9 @@ def train_cae(args):
     panda = Panda()
 
     parent_folder = 'demos'
-    folders = ["forktest"]
+    folders = ["demo_fork", "demo_cups", "demo_mug", "demo_shakers"]
+    folders = [folders[args.folder_to_use]]
+
     data_folder = "data"
     model_folder = "models"
     savename = 'cae_' + "_".join(folders)
@@ -98,8 +100,8 @@ def train_cae(args):
     noisesamples = args.noisesamples#5
     dataset = []
     demos = []
-    folder = "all"
-    demos = glob.glob(parent_folder + "/" + folder + "/**/*.pkl")
+    for folder in folders:
+        demos += glob.glob(parent_folder + "/" + folder + "/**.pkl")
     print(demos)
     # demos = [parent_folder + "/" + folder + "/" +folder+f"_{i}"+ ".pkl" for i in range(10)]
     
@@ -152,11 +154,11 @@ def train_cae(args):
     train_data = MotionData(dataset)
 
     # EPOCH = 100
-    EPOCH = 500
+    EPOCH = 300
     # BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     BATCH_SIZE_TRAIN = 2#int(train_data.__len__() / 10.)
     # LR = 0.0001
-    LR = 0.001
+    LR = 0.0001
     LR_STEP_SIZE = 400
     LR_GAMMA = 0.15
     
@@ -181,9 +183,11 @@ def main():
     #rospy.init_node("train_cae")
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-tasks", type=int, help="number of tasks to use", default=1)
-    parser.add_argument("--lookahead", type=int, help="lookahead to compute robot action", default=5)
+    parser.add_argument("--folder-to-use", type=int, help="which folder should \
+                        we use for one by one training", default=0)
+    parser.add_argument("--lookahead", type=int, help="lookahead to compute robot action", default=15)
     parser.add_argument("--noisesamples", type=int, help="num of noise samples", default=5)
-    parser.add_argument("--noiselevel", type=float, help="variance for noise", default=.0005)
+    parser.add_argument("--noiselevel", type=float, help="variance for noise", default=.0001)
     args = parser.parse_args()
     train_cae(args)
 
