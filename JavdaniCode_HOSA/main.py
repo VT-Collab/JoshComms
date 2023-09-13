@@ -33,7 +33,7 @@ if __name__ == "__main__":
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
     #print("HOT POTATO")
     ada_handler = AdaHandler(env, goals, goal_objects) #goal objects is env objects, goals are GOAL object made from env objects
-    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=True,confVibe= True)
+    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=False,confVibe= True)
     #TODO:
     #Change GUI  element
     #Add Data Tracker

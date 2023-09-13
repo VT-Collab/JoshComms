@@ -45,7 +45,7 @@ num_control_modes = 2
 
   
 class AdaHandler:
-	def __init__(self, env, goals, goal_objects, goal_object_poses=None):
+	def __init__(self, env, goals, goal_objects, goal_object_poses=None,user=44,demo=0):
 #      self.params = {'rand_start_radius':0.04,
 #             'noise_pwr': 0.3,  # magnitude of noise
 #             'vel_scale': 4.,   # scaling when sending velocity commands to robot
@@ -64,8 +64,9 @@ class AdaHandler:
 		else:
 			self.goal_object_poses = goal_object_poses
 		self.panda = env.panda
-
+		self.filename = "data/user" + str(user) + "/demo" +str(demo)+ ".pkl"
 		self.robot_policy = AdaAssistancePolicy(self.goals)
+		
 
 	# def joint_limit(self,CURR,ACT):
 	# 	use = CURR + ACT
@@ -104,6 +105,8 @@ class AdaHandler:
 		print("[*] Connecting to gripper")
 		conn_gripper = connect2gripper(PORT_gripper)
 		self.robot_state = readState(conn)
+		q = self.robot_state['q']
+
 		if (w_comms == True):
 			PORT_comms = 8642
 			#Inner_port = 8640
@@ -118,7 +121,7 @@ class AdaHandler:
 		# GUI_1.myLabel1 = Label(GUI_1.root, text = "Confidence", font=("Palatino Linotype", 40))
 		# GUI_1.myLabel1.grid(row = 0, column = 0, pady = 50, padx = 50)
 		# GUI_1.root.update()
-
+		self.interface = Joystick()
 
 		action_scale = 0.025
 		r_action_scale = action_scale*5
@@ -141,16 +144,24 @@ class AdaHandler:
 		end_time=time.time()
 		left_time = time.time()-2
 		right_time = time.time()-2
+
+		StateList = [q]
+		UserActionList = [[0]*7]
+		AutoActionList = [[0]*7]
+		SA_time = 0
+		
+		
 			
 		while True:
 			xdot = [0]*6
 			robot_dof_values = 7
 			#get pose of min value target for user's goal
 			self.robot_state = readState(conn)
+			q = self.robot_state['q']
 
-			interface = Joystick()
-			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = interface.input()
-
+			
+			z, A_pressed, B_pressed, X_pressed, Y_pressed, START, STOP, RightT, LeftT = self.interface.input()
+			#print(X_pressed)
 			if A_pressed:
 				xdot[3] = -action_scale * z[0]
 				xdot[4] = action_scale * z[1]
@@ -190,7 +201,7 @@ class AdaHandler:
 				#print(goal_distribution[max_prob_goal_ind])
 
 				if ((end_time - sim_time) > 2.0 and (w_comms == True)):
-					use = np.append(self.robot_state['q'],log_goal_distribution)
+					use = np.append(q,log_goal_distribution)
 					#print("SENT",self.robot_state['q'])
 					#print("SENT",np.shape(log_goal_distribution))
 					send2comms(conn2, use)
@@ -200,11 +211,12 @@ class AdaHandler:
 				if confVibe:
 					#print()
 					if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution):
-						interface.rumble(200)
+						self.interface.rumble(200)
 
 				if auto_or_noto and not direct_teleop_only:
 					#action = self.user_input_mapper.input_to_action(user_input_all, robot_state)
 					#blend vs normal only dictates goal prediction method and use of confidence screening function to decide whether to act.
+					SA_time += time.time()-end_time
 					if blend_only:
 						#print("AUTOPLUS:",autoplus)
 						if autoplus:
@@ -221,6 +233,12 @@ class AdaHandler:
 
 			send2robot(conn, action)
 			end_time=time.time()
+
+			StateList.append(q)
+			UserActionList.append(direct_teleop_action)
+			AutoActionList.append(action)
+
+
 			if X_pressed:
 				send2gripper(conn_gripper, "c")
 				print("closed")
@@ -233,6 +251,11 @@ class AdaHandler:
 			#self.env.step(joint = action,mode = 0)
 			if STOP:
 				print("[*] Done!")
+				db = {'TotalTime':abs(time.time-end_time), 'SA_time':SA_time,'State':StateList,'UserAction':UserActionList,'AutoAction':AutoActionList}
+				dbfile = open(self.filename,'ab')
+				pickle.dump(db,dbfile)
+				dbfile.close()
+				print("DATA SAVED")
 				return True
 
 			if end_time-start_time > 300.0:

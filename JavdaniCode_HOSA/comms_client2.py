@@ -83,7 +83,7 @@ def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.connect(('127.0.0.1', PORT_comms)) #White Box
-    interface = Joystick()
+    #   interface = Joystick()
 
 
     run_time =2 #how long each run should go for
