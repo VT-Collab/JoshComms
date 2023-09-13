@@ -3,6 +3,7 @@ from scipy.stats import halfnorm
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from torch.distributions import Normal
 
 
 # uniformally distributes network weights at initialization
@@ -33,10 +34,9 @@ class RobotPolicy(nn.Module):
         self.num_actions = num_actions
         self.n_hidden_layers = n_hidden_layers
         self.linear_1 = nn.Linear(num_joints, hidden_dim)
-        self.linear_f = nn.Linear(hidden_dim, num_actions)
-        self.hidden_layers = [
-            nn.Linear(hidden_dim, hidden_dim) for _ in range(n_hidden_layers)
-        ]
+        self.linear_2 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear_3 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear_4 = nn.Linear(hidden_dim, num_actions)
         self.apply(weights_init_)
         self.activation_function = activation_function
 
@@ -45,9 +45,59 @@ class RobotPolicy(nn.Module):
         Map from states to actions
         """
         x = self.activation_function(self.linear_1(state))
-        for i in range(self.n_hidden_layers):
-            x = self.activation_function(self.hidden_layers[i](x))
-        action = self.linear_f(x)
+        x = self.activation_function(self.linear_2(x))
+        x = self.activation_function(self.linear_3(x))
+        x = self.activation_function(self.linear_4(x))
+        return x
+
+    def load(self, path: str):
+        """Loads the model's state_dict from a path and applies weights"""
+        d = torch.load(path)
+        self.load_state_dict(d["state_dict"])
+        self.eval()
+        return
+
+    def save(self, path: str):
+        """Saves the model's state_dict to a path"""
+        torch.save({"state_dict": self.state_dict()}, path)
+        return
+
+class GaussianRobotPolicy(nn.Module):
+    def __init__(
+        self,
+        num_joints=7,
+        num_actions=6, # do not control gripper
+        hidden_dim=256,
+        activation_function=torch.relu,
+    ) -> None:
+        """
+        num_joints: number of inputs (joints)
+        num_actions: number of outputs (joints)
+        n_hidden_layers: number of hidden layers to use
+        hidden_dim: dimension to use for the hidden layers
+        activation_function: activation function to use. defaults to relu
+        """
+        super(GaussianRobotPolicy, self).__init__()
+        self.num_joints = num_joints
+        self.num_actions = num_actions
+        self.linear_1 = nn.Linear(num_joints, hidden_dim)
+        self.linear_2 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear_3 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear_mu = nn.Linear(hidden_dim, num_actions)
+        self.linear_std = nn.Linear(hidden_dim, num_actions)
+        # self.apply(weights_init_)
+        self.activation_function = activation_function
+
+    def forward(self, state):
+        """
+        Map from states to actions. This method is TODO
+        """
+        x = self.activation_function(self.linear_1(state))
+        x = self.activation_function(self.linear_2(x))
+        x = self.activation_function(self.linear_3(x))
+        mu = self.linear_mu(x)
+        log_std = self.linear_std(x)
+        action = Normal(mu, log_std.exp()).rsample()
         return action
 
     def load(self, path: str):

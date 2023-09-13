@@ -2,7 +2,7 @@ import numpy as np
 from argparse import ArgumentParser
 import torch
 from interfaces.interface_utils import CommServer
-from bc_sa.models import RobotPolicy
+from bc_sa.models import RobotPolicy, GaussianRobotPolicy
 from utils_panda import JoystickControl, TrajectoryClient
 
 from env.env2 import SimpleEnv
@@ -10,7 +10,7 @@ from bc_sa.models import RobotPolicy
 
 
 def run_virtual(args):
-    model = RobotPolicy()
+    model = GaussianRobotPolicy()
     model.load(args.model_filename)
     env = SimpleEnv(visualize=args.visualize)
     num_joints = 7
@@ -25,7 +25,7 @@ def run_virtual(args):
 
 def run_real(args):
     raise NotImplementedError
-    model = RobotPolicy()
+    model = GaussianRobotPolicy()
     mover = TrajectoryClient()
     joystick = JoystickControl()
 

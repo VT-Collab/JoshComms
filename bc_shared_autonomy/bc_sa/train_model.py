@@ -8,11 +8,11 @@ from argparse import ArgumentParser
 import pickle
 import glob
 
-from models import RobotPolicy, ReplayMemory
+from models import RobotPolicy, GaussianRobotPolicy, ReplayMemory
 
 
 def train_robot_policy(
-    model: RobotPolicy, memory: ReplayMemory, optim: Adam, epochs=100, batch_size=1000
+    model: RobotPolicy | GaussianRobotPolicy, memory: ReplayMemory, optim: Adam, epochs=100, batch_size=1000
 ):
     """
     Training the robot policy via simple behavior cloning. There are better
@@ -63,7 +63,7 @@ def load_panda_demo_file(filename):
 
 def main(args):
     memory = ReplayMemory(capacity=0) 
-    model = RobotPolicy()
+    model = GaussianRobotPolicy()
     optim = Adam(model.parameters(), lr=0.001)
     files = glob.glob(args.demo_folder + "/*.pkl")
     for f in files:
