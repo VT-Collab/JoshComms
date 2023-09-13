@@ -9,6 +9,7 @@ import pickle
 import glob
 
 from models import RobotPolicy, GaussianRobotPolicy, ReplayMemory
+from augment_samples import add_samples_from_states, add_samples_from_actions
 
 
 def train_robot_policy(
@@ -75,6 +76,8 @@ def main(args):
     memory.size = len(memory.buffer)
     memory.position = len(memory.buffer)
     memory.capacity = memory.size
+    memory = add_samples_from_states(memory)
+    memory = add_samples_from_actions(memory)
     train_robot_policy(
         model, memory, optim, epochs=args.epochs, batch_size=len(memory)
     )

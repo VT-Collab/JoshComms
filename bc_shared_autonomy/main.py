@@ -19,7 +19,7 @@ def run_virtual(args):
         q = state["q"][0:num_joints]
         q_tensor = torch.FloatTensor(q)
         action = model(q_tensor).detach().numpy()
-        print(q, action)
+        print(np.round(q, 2), np.round(action, 2))
         state, _, _, _ = env.step(joint=action, mode=0, grasp=False)
 
 
