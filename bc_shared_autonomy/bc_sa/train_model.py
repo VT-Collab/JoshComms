@@ -56,6 +56,7 @@ def load_panda_demo_file(filename):
         for d in demo:
             state = np.array(d["curr_q"])
             action = np.array(d["curr_q"]) - np.array(d["start_q"])
+            action = action[0:-1]
             memory.push(state, action)
     return memory
 
@@ -83,10 +84,10 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--demo-folder", type=str, default="demos", help="file to load demos from"
+        "--demo-folder", type=str, default="demos/demo_fork", help="file to load demos from"
     )
     parser.add_argument(
-        "--model-file", type=str, default="bc_model", help="file to save model to"
+        "--model-file", type=str, default="saved_models/bc_model", help="file to save model to"
     )
     parser.add_argument("--epochs", type=int, default=100, help="epochs to train")
     parser.add_argument(

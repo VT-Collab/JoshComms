@@ -8,9 +8,9 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 
-from objects import InteractiveObj, RBOObject, YCBObject
-from panda_env2 import Panda
-from tf import *
+# from objects import InteractiveObj, RBOObject, YCBObject
+# from panda_env2 import Panda
+# from tf import *
 
 
 class CommClass(object):

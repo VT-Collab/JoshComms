@@ -16,7 +16,7 @@ class RobotPolicy(nn.Module):
     def __init__(
         self,
         num_joints=7,
-        num_actions=7,
+        num_actions=6, # do not control gripper
         n_hidden_layers=2,
         hidden_dim=256,
         activation_function=torch.relu,
@@ -51,14 +51,15 @@ class RobotPolicy(nn.Module):
         return action
 
     def load(self, path: str):
-        """Loads the model's state_dict from a path and applys weights"""
-        self.load_state_dict(torch.load(path))
+        """Loads the model's state_dict from a path and applies weights"""
+        d = torch.load(path)
+        self.load_state_dict(d["state_dict"])
         self.eval()
         return
 
     def save(self, path: str):
         """Saves the model's state_dict to a path"""
-        torch.save(self.state_dict, path)
+        torch.save({"state_dict": self.state_dict()}, path)
         return
 
 
