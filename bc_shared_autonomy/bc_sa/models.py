@@ -137,3 +137,63 @@ class ReplayMemory:
         Returns the number of records in the buffer.
         """
         return self.size
+
+class ReplayMemory_t(ReplayMemory):
+    """
+    This is a variant of the ReplayMemory class which includes timestep and
+    global indentifier data (eg, (s,a) -> (s, a, timestamp)).
+    Note that the global indentifier is *unique to the instance of the object*.
+    """
+    def push(
+            self, states: np.ndarray, actions: np.ndarray, t: float
+    ) -> None:
+        """
+        Push a record into the buffer.
+
+        Params           Type
+        ---------------------
+        TODO
+        """
+        if self.capacity > 0:
+            self.buffer[self.position] = (states, actions, t)
+            self.position = (self.position + 1) % self.capacity
+            self.size = min(self.size + 1, self.capacity)
+        else:
+            self.buffer[self.position] = (states, actions, t)
+            self.position += 1
+            self.size += 1
+
+    def sample(self, batch_size: int):
+        """
+        Samples records from the buffer according to a uniform distribution
+
+        Params           Type
+        ---------------------
+        batch_size       int
+        stdev            number
+        """
+        batch = np.random.choice(self.buffer[0 : self.size], batch_size)
+        states, actions, t = map(np.stack, zip(*batch))
+        return states, actions, t
+
+    def weighted_sample(self, batch_size: int, stdev=10.0):
+        """
+        Samples records from the buffer according to a halfnorm distribution.
+
+        Params           Type
+        ---------------------
+        TODO
+        """
+        upper_limit = self.capacity
+        if self.capacity <= 0:
+            upper_limit = self.size
+        weights = np.array(
+            halfnorm.pdf(np.arange(0, upper_limit), loc=0, scale=stdev)
+        )
+        weights = weights.take(np.arange(self.position - upper_limit, self.position))[
+            ::-1
+        ][0 : self.size]
+        weights /= np.sum(weights)
+        batch = np.random.choice(self.buffer[0 : self.size], batch_size, p=weights)
+        states, actions, t = map(np.stack, zip(*batch))
+        return states, actions, t
