@@ -43,19 +43,39 @@ def train_robot_policy(
     return
 
 
+def load_panda_demo_file(filename):
+    """
+    Loads a pickled demo from `filename`, saving only the curr_q and
+    action
+    """
+    memory = None
+    with open(filename, "rb") as f:
+        demo = pickle.load(f)
+        n_samples = len(demo)
+        memory = ReplayMemory(capacity=n_samples)
+        for d in demo:
+            state = np.array(d["curr_q"])
+            action = np.array(d["curr_q"]) - np.array(d["start_q"])
+            memory.push(state, action)
+    return memory
+
+
 def main(args):
-    memory = ReplayMemory(capacity=0)  # buffer acts as a list
+    memory = ReplayMemory(capacity=0) 
     model = RobotPolicy()
     optim = Adam(model.parameters(), lr=0.001)
     files = glob.glob(args.demo_folder + "/*.pkl")
     for f in files:
-        data = pickle.load(f)
+        data = load_panda_demo_file(f)
         assert type(data) == ReplayMemory
         memory.buffer = np.concatenate((memory.buffer, data.buffer))
+        memory.size += len(data)
+        memory.position += len(data)
     memory.size = len(memory.buffer)
     memory.position = len(memory.buffer)
+    memory.capacity = memory.size
     train_robot_policy(
-        model, memory, optim, epochs=args.epochs, batch_size=args.batch_size
+        model, memory, optim, epochs=args.epochs, batch_size=len(memory)
     )
     model.save(args.model_file)
 

@@ -66,8 +66,7 @@ class RobotPolicy(nn.Module):
 class ReplayMemory:
     def __init__(self, capacity=1000):
         """
-        Initializes the `ReplayMemory` object. If `capacity` is 0, 
-        the storage becomes infinite (ie: the buffer acts as a list)
+        Initializes the `ReplayMemory` object.
 
         Params           Type
         ---------------------
@@ -88,14 +87,9 @@ class ReplayMemory:
         ---------------------
         TODO
         """
-        if self.capacity > 0:
-            self.buffer[self.position] = (states, actions)
-            self.position = (self.position + 1) % self.capacity
-            self.size = min(self.size + 1, self.capacity)
-        else:
-            self.buffer[self.position] = (states, actions)
-            self.position += 1
-            self.size += 1
+        self.buffer[self.position] = (states, actions)
+        self.position = (self.position + 1) % self.capacity
+        self.size = min(self.size + 1, self.capacity)
 
     def sample(self, batch_size: int):
         """
@@ -119,8 +113,6 @@ class ReplayMemory:
         TODO
         """
         upper_limit = self.capacity
-        if self.capacity <= 0:
-            upper_limit = self.size
         weights = np.array(
             halfnorm.pdf(np.arange(0, upper_limit), loc=0, scale=stdev)
         )
@@ -154,14 +146,9 @@ class ReplayMemory_t(ReplayMemory):
         ---------------------
         TODO
         """
-        if self.capacity > 0:
-            self.buffer[self.position] = (states, actions, t)
-            self.position = (self.position + 1) % self.capacity
-            self.size = min(self.size + 1, self.capacity)
-        else:
-            self.buffer[self.position] = (states, actions, t)
-            self.position += 1
-            self.size += 1
+        self.buffer[self.position] = (states, actions, t)
+        self.position = (self.position + 1) % self.capacity
+        self.size = min(self.size + 1, self.capacity)
 
     def sample(self, batch_size: int):
         """
@@ -185,8 +172,6 @@ class ReplayMemory_t(ReplayMemory):
         TODO
         """
         upper_limit = self.capacity
-        if self.capacity <= 0:
-            upper_limit = self.size
         weights = np.array(
             halfnorm.pdf(np.arange(0, upper_limit), loc=0, scale=stdev)
         )
