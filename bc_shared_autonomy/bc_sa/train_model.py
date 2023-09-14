@@ -9,7 +9,7 @@ import pickle
 import glob
 
 from models import RobotPolicy, GaussianRobotPolicy, ReplayMemory
-from augment_samples import add_samples_from_states, add_samples_from_actions
+from augment_samples import add_samples_from_states, add_samples_from_actions, add_samples_from_lookahead
 
 
 def train_robot_policy(
@@ -27,6 +27,7 @@ def train_robot_policy(
     epochs       int (100)
     batch_size   int (1000)
     """
+    print(f"Training on {len(memory)} state action pairs")
     for ep in range(epochs):
         states, actions = memory.sample(batch_size)
         state_batch = torch.FloatTensor(states)
@@ -40,6 +41,7 @@ def train_robot_policy(
         optim.step()
 
         print(f"Epoch: {ep}, Loss: {np.round(loss.item(), 2)}")
+        print(np.round(action_hat.detach().numpy()[0], 2), np.round(action_batch.detach().numpy()[0], 2))
 
     return
 
@@ -76,8 +78,12 @@ def main(args):
     memory.size = len(memory.buffer)
     memory.position = len(memory.buffer)
     memory.capacity = memory.size
-    memory = add_samples_from_states(memory)
-    memory = add_samples_from_actions(memory)
+    len_prev = len(memory)
+    memory = add_samples_from_states(memory, n_gen=50, noise=0.01)
+    memory = add_samples_from_actions(memory, s_delta=1e-2)
+    len_post = len(memory)
+    num_runs = int(np.floor(len_post / len_prev) * len(files))
+    # memory = add_samples_from_lookahead(memory, lookahead=int(len(memory) / (num_runs * 50)), n_runs=num_runs)
     train_robot_policy(
         model, memory, optim, epochs=args.epochs, batch_size=len(memory)
     )
