@@ -43,7 +43,7 @@ class GoalPredictor(object):
         if np.linalg.norm(self.user_action) < threshold:
             temp_timer = time.time()
             if (temp_timer - self.movement_timer)>1:
-                self.log_goal_distribution[max_prob_goal_ind] =1
+                self.log_goal_distribution[max_prob_goal_ind] *= 1.1
                 print("semi")
         else:
             #print(max_prob_goal_ind,"TEEEST")
@@ -55,7 +55,7 @@ class GoalPredictor(object):
             use2 = use2/np.linalg.norm(use2)        
             self.log_goal_distribution[max_prob_goal_ind] *= 1.1*np.exp(-np.linalg.norm(use2-use))
             #print("Functional",1.1*np.exp(-np.linalg.norm(use2-use)))
-        self.movement_timer = time.time()
+            self.movement_timer = time.time()
 
 
 
