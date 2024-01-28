@@ -68,7 +68,7 @@ def send2comms(conn, msg, limit=1.0):
 def main():
 
     print("initializing test environment")
-    env = Initialize_Env(visualize=True)
+    env = Initialize_Env(visualize=False)
 
     #initialize HOSA goals and handler
     #set the huber constants differently if the robot movement magnitude is fixed to user input magnitude

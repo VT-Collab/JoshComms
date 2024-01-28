@@ -1,6 +1,6 @@
 #Handles converting openrave items to generic assistance policy
 from Goal import *
-import BayesGoalPredictor as GoalPredictor
+import BayesGoalPredictor2 as GoalPredictor
 #from ada_teleoperation.RobotState import Action
 
 from Secondary_AssistPolicy import *

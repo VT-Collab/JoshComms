@@ -311,10 +311,13 @@ class AdaHandler:
 			xdot = [0]*6
 			robot_dof_values = 7
 			self.robot_state = self.env.panda.state
-#
-			if ((end_time - sim_time) > 2.0 and (w_comms == True)):
-				#print("SENT",self.robot_state['q'])
-				send2comms(conn2, self.robot_state['q'])
+			log_goal_distribution = self.robot_policy.goal_predictor.log_goal_distribution
+#			
+			if ((end_time - sim_time) > 0.05 and (w_comms == True)):
+			#if ( (w_comms == True)):
+				print("LOG",log_goal_distribution)
+				use = np.append(self.robot_state['q'],log_goal_distribution)
+				send2comms(conn2, use)
 				sim_time = time.time()
 			#direct_teleop_action = xdot2qdot(xdot, self.env.panda.state) #qdot
 #
