@@ -28,8 +28,8 @@ class SimpleEnv():
         # Cup 1
         self.cup1 = YCBObject("002_master_chef_can")
         self.cup1.load()
-        self.cup1_position = [0.35, 0.2, 0.075]
-        self.cup1_poslist = [[0.35, 0.2, 0.075]]
+        self.cup1_position = [0.3, 0.3, 0.075]
+        self.cup1_poslist = [[0.3, 0.3, 0.075]]
         self.cup1_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -62,8 +62,8 @@ class SimpleEnv():
         #Salt Shaker
         self.salt = RBOObject("block")
         self.salt.load()
-        self.salt_position = [0.65, -0.2, 0.05]
-        self.salt_poslist = [[0.65, -0.2, 0.075]]
+        self.salt_position = [0.7, 0.3, 0.05]
+        self.salt_poslist = [[0.7, 0.3, 0.075]]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         

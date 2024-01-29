@@ -134,7 +134,7 @@ class AdaHandler:
 		# GUI_1.root.update()
 		self.interface = Joystick()
 
-		action_scale = 0.125*(1/2s)
+		action_scale = 0.125*(1/2)
 		r_action_scale = action_scale*2
 		#print(self.robot_state["q"])
 		auto_or_noto = False
@@ -328,10 +328,21 @@ class AdaHandler:
 		start_state = self.robot_state
 		ee_pos,ee_trans = joint2pose(self.robot_state['q'])
 
-		if (w_comms == True):
-			PORT_comms = 8642
-			print("connecting to comms")
-			conn2 = connect2comms(PORT_comms)
+		if (w_comms == True):	
+			GUI_1 = GUI_Interface()
+			GUI_1.root.geometry("+100+100")
+			GUI_1.fg = '#ff0000'
+			GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)     
+
+			GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+			GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
+			Tracker = "Tired"
+			oldmax = 9001
+			GUI_1.root.update()
 
 		if direct_teleop_only: 
 			use_assistance = False
@@ -365,13 +376,61 @@ class AdaHandler:
 			robot_dof_values = 7
 			self.robot_state = self.env.panda.state
 			log_goal_distribution = self.robot_policy.goal_predictor.log_goal_distribution
-#			
-			if ((end_time - sim_time) > 0.05 and (w_comms == True)):
-			#if ( (w_comms == True)):
-				print("LOG",log_goal_distribution)
-				use = np.append(self.robot_state['q'],log_goal_distribution)
-				send2comms(conn2, use)
-				sim_time = time.time()
+			goal_distribution = self.robot_policy.goal_predictor.get_distribution()
+			max_prob_goal_ind = np.argmax(goal_distribution)
+			if (w_comms == True and (time.time() - sim_time) > .5): #avoid slow down
+					#if confident enough
+					sim_time = time.time()
+					#print("Comm Runnin",goal_distribution)
+					goal_distribution_sorted = np.sort(goal_distribution)
+					
+					if goal_distribution_sorted[-1] - goal_distribution_sorted[-2] > .3:
+						if oldmax != max_prob_goal_ind:
+							s1_time = time.time()
+							#GUI_1.fg = '#00ff00'
+							if max_prob_goal_ind == 0:
+								GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+							else:
+								GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
+
+							if max_prob_goal_ind == 1:
+								GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+							else:
+								GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+							if max_prob_goal_ind == 2:
+								GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+							else:
+								GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							#print("S1:",time.time()-s1_time)
+							oldmax = max_prob_goal_ind
+							Tracker = "Goal"
+					else:
+						if Tracker == "Goal":
+							GUI_1.fg = '#ff0000'
+							GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)     
+
+							GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+							GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
+							Tracker = "Tired"
+						 	
+						#print("S2:",time.time()-s2_time)
+					#s3_time = time.time()
+					GUI_1.textbox1.delete(0, END)
+					GUI_1.textbox1.insert(0, goal_distribution[0])
+				
+					GUI_1.textbox2.delete(0, END)
+					GUI_1.textbox2.insert(0, goal_distribution[1])
+
+					GUI_1.textbox3.delete(0, END)
+					GUI_1.textbox3.insert(0,goal_distribution[2])
+					GUI_1.root.update()
 			#direct_teleop_action = xdot2qdot(xdot, self.env.panda.state) #qdot
 #
 			xcurr = self.env.panda.state['ee_position']
@@ -407,10 +466,20 @@ class AdaHandler:
 		ee_pos,ee_trans = joint2pose(self.robot_state['q'])
 
 		if (w_comms == True):
-			PORT_comms = 8642
-			#Inner_port = 8640
-			print("connecting to comms")
-			conn2 = connect2comms(PORT_comms)
+			GUI_1 = GUI_Interface()
+			GUI_1.root.geometry("+100+100")
+			GUI_1.fg = '#ff0000'
+			GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)     
+
+			GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+			GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+			GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
+			Tracker = "Tired"
+			oldmax = 9001
+			GUI_1.root.update()
 
 
 		self.interface = Joystick()
@@ -484,16 +553,63 @@ class AdaHandler:
 				#When this updates, it updates assist policy and goal policies
 				self.robot_policy.update(self.robot_state, direct_teleop_action)
 
-				if ((end_time - sim_time) > 2.0 and (w_comms == True)):
-					goal_distribution = self.robot_policy.goal_predictor.get_distribution()
-					max_prob_goal_ind = np.argmax(goal_distribution)
-					print(max_prob_goal_ind,"TEEEST")
-					log_goal_distribution = self.robot_policy.goal_predictor.log_goal_distribution
-					use = np.append(q,log_goal_distribution)
-					send2comms(conn2, use)
-					sim_time = time.time()
+				goal_distribution = self.robot_policy.goal_predictor.get_distribution()
+				max_prob_goal_ind = np.argmax(goal_distribution)
+				if (w_comms == True and (time.time() - sim_time) > .5): #avoid slow down
+						#if confident enough
+						sim_time = time.time()
+						#print("Comm Runnin",goal_distribution)
+						goal_distribution_sorted = np.sort(goal_distribution)
+						
+						if goal_distribution_sorted[-1] - goal_distribution_sorted[-2] > .3:
+							if oldmax != max_prob_goal_ind:
+								s1_time = time.time()
+								#GUI_1.fg = '#00ff00'
+								if max_prob_goal_ind == 0:
+									GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+								else:
+									GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
 
-				if auto_or_noto and not direct_teleop_only:
+								if max_prob_goal_ind == 1:
+									GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+								else:
+									GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+								if max_prob_goal_ind == 2:
+									GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
+								else:
+									GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								#print("S1:",time.time()-s1_time)
+								oldmax = max_prob_goal_ind
+								Tracker = "Goal"
+						else:
+							if Tracker == "Goal":
+								GUI_1.fg = '#ff0000'
+								GUI_1.textbox1 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								GUI_1.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)     
+
+								GUI_1.textbox2 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								GUI_1.textbox2.grid(row = 1, column = 1,  pady = 10, padx = 20)
+
+								GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+								GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
+								Tracker = "Tired"
+								
+							#print("S2:",time.time()-s2_time)
+						#s3_time = time.time()
+						GUI_1.textbox1.delete(0, END)
+						GUI_1.textbox1.insert(0, goal_distribution[0])
+					
+						GUI_1.textbox2.delete(0, END)
+						GUI_1.textbox2.insert(0, goal_distribution[1])
+
+						GUI_1.textbox3.delete(0, END)
+						GUI_1.textbox3.insert(0,goal_distribution[2])
+						GUI_1.root.update()
+
+				if auto_or_noto:
 					#action = self.user_input_mapper.input_to_action(user_input_all, robot_state)
 					#blend vs normal only dictates goal prediction method and use of confidence screening function to decide whether to act.
 					SA_time += time.time()-end_time
