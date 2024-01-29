@@ -85,7 +85,7 @@ class AdaAssistancePolicy:
     #print("Q",assisted_qdot)
     return assisted_qdot
 
-  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.35):
+  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.3):
     if len(goal_distribution) <= 1:
       print("FAILURE")
       return True

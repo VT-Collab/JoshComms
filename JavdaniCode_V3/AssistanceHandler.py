@@ -88,6 +88,8 @@ class AdaHandler:
 
 	def execute_policy(self, direct_teleop_only=False, blend_only=TRUE, fix_magnitude_user_command=TRUE, w_comms = True):
 		#goal_distribution = np.array([0.333, 0.333, 0.333])
+		#change button to y vs LT
+		#make auto and auto plus
 		print('[*] Connecting to low-level controller...')
 		#self.panda = panda()
 
@@ -103,8 +105,8 @@ class AdaHandler:
 		PORT_gripper = 8081
 
 
-		print("[*] Connecting to gripper")
-		conn_gripper = connect2gripper(PORT_gripper)
+		# print("[*] Connecting to gripper")
+		# conn_gripper = connect2gripper(PORT_gripper)
 		self.robot_state = readState(conn)
 		q = self.robot_state['q']
 
@@ -134,7 +136,7 @@ class AdaHandler:
 		# GUI_1.root.update()
 		self.interface = Joystick()
 
-		action_scale = 0.125*(1/2)
+		action_scale = 0.125*(1/4)
 		r_action_scale = action_scale*2
 		#print(self.robot_state["q"])
 		auto_or_noto = False
@@ -144,7 +146,7 @@ class AdaHandler:
 		if not direct_teleop_only and fix_magnitude_user_command:
 			for goal_policy in self.robot_policy.assist_policy.goal_assist_policies:
 				for target_policy in goal_policy.target_assist_policies:
-					target_policy.set_constants(huber_translation_linear_multiplier=1.55, huber_translation_delta_switch=0.11, huber_translation_constant_add=0.2, huber_rotation_linear_multiplier=0.20, huber_rotation_delta_switch=np.pi/72., huber_rotation_constant_add=0.3, huber_rotation_multiplier=0.20, robot_translation_cost_multiplier=14.0, robot_rotation_cost_multiplier=0.05)
+					target_policy.set_constants(huber_translation_linear_multiplier=1.55, huber_translation_delta_switch=0.18, huber_translation_constant_add=0.5, huber_rotation_linear_multiplier=0, huber_rotation_delta_switch=0., huber_rotation_constant_add=0.0, huber_rotation_multiplier=0.0, robot_translation_cost_multiplier=14.0, robot_rotation_cost_multiplier=0.05)
 
 		start_time = time.time()
 		sim_time = 0.0
@@ -201,7 +203,11 @@ class AdaHandler:
 				self.robot_policy.update(self.robot_state, direct_teleop_action)
 				
 				goal_distribution = self.robot_policy.goal_predictor.get_distribution()
-				max_prob_goal_ind = np.argmax(goal_distribution)
+				
+				# if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution, prob_diff_required=0.3):
+				# 	print("GOOD")
+				# else:
+				# 	print("Bad")
 				#print(max_prob_goal_ind,"TEEEST")
 				#log_goal_distribution = self.robot_policy.goal_predictor.log_goal_distribution
 				#print(goal_distribution)
@@ -215,9 +221,9 @@ class AdaHandler:
 					#if confident enough
 					sim_time = time.time()
 					#print("Comm Runnin",goal_distribution)
-					goal_distribution_sorted = np.sort(goal_distribution)
-					
-					if goal_distribution_sorted[-1] - goal_distribution_sorted[-2] > .3:
+					#goal_distribution_sorted = np.sort(goal_distribution)
+					max_prob_goal_ind = np.argmax(goal_distribution)
+					if self.robot_policy.blend_confidence_function_prob_diff(goal_distribution, prob_diff_required=0.3):
 						if oldmax != max_prob_goal_ind:
 							s1_time = time.time()
 							#GUI_1.fg = '#00ff00'
@@ -237,6 +243,7 @@ class AdaHandler:
 								GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg='#00ff00', borderwidth = 3, font=("Palatino Linotype", 40))
 							else:
 								GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
+							GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
 							#print("S1:",time.time()-s1_time)
 							oldmax = max_prob_goal_ind
 							Tracker = "Goal"
@@ -252,6 +259,7 @@ class AdaHandler:
 							GUI_1.textbox3 = Entry(GUI_1.root, width = 8, bg = "white", fg=GUI_1.fg, borderwidth = 3, font=("Palatino Linotype", 40))
 							GUI_1.textbox3.grid(row = 1, column = 2,  pady = 10, padx = 20) 
 							Tracker = "Tired"
+							oldmax = 9001
 						 	
 						#print("S2:",time.time()-s2_time)
 					#s3_time = time.time()
@@ -279,6 +287,7 @@ class AdaHandler:
 							action = self.robot_policy.get_blend_action() #uses in built variables brought by update into maintained class
 					else:
 						action = self.robot_policy.get_action()*r_action_scale #see above
+						print("WRONG")
 				else:
 				#if left trigger is being hit, direct teleop
 					action = direct_teleop_action
@@ -293,16 +302,19 @@ class AdaHandler:
 			AutoActionList.append(action)
 
 
-			if X_pressed:
-				send2gripper(conn_gripper, "c")
-				print("closed")
-				time.sleep(0.5)
+			# if X_pressed:
+			# 	send2gripper(conn_gripper, "c")
+			# 	print("closed")
+			# 	time.sleep(0.5)
+			if B_pressed:
+				print("Conf",goal_distribution)
+				
 
-			if Y_pressed:
-				print("OPEN")
-				send2gripper(conn_gripper, "o")
-				time.sleep(0.5)
-			#self.env.step(joint = action,mode = 0)
+			# if Y_pressed:
+			# 	print("OPEN")
+			# 	send2gripper(conn_gripper, "o")
+			# 	time.sleep(0.5)
+			# #self.env.step(joint = action,mode = 0)
 			if STOP:
 				print("[*] Done!")
 				db = {'TotalTime':abs(time.time-end_time), 'SA_time':SA_time,'State':StateList,'UserAction':UserActionList,'AutoAction':AutoActionList}

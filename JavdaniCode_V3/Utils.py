@@ -220,19 +220,19 @@ class Joystick(object):
     curr_time = time.time()
     z1 = self.gamepad.get_axis(0)
     z2 = self.gamepad.get_axis(1)
-    z3 = self.gamepad.get_axis(3)
+    z3 = self.gamepad.get_axis(4)
     if abs(z1) < self.deadband:
       z1 = 0.0
     if abs(z2) < self.deadband:
       z2 = 0.0
     if abs(z3) < self.deadband:
       z3 = 0.0
-    A_pressed = self.gamepad.get_button(1) 
-    B_pressed = self.gamepad.get_button(2) 
-    X_pressed = self.gamepad.get_button(0) 
+    A_pressed = self.gamepad.get_button(0) 
+    B_pressed = self.gamepad.get_button(1) 
+    X_pressed = self.gamepad.get_button(2) 
     Y_pressed = self.gamepad.get_button(3) 
-    START_pressed = self.gamepad.get_button(9) 
-    STOP_pressed = self.gamepad.get_button(8) 
+    START_pressed = self.gamepad.get_button(8) 
+    STOP_pressed = self.gamepad.get_button(6) 
     Right_trigger = self.gamepad.get_button(5)
     Left_Trigger = self.gamepad.get_button(4)
     if A_pressed or START_pressed or B_pressed:
@@ -281,11 +281,11 @@ class Joystick(object):
 VIEWER_DEFAULT = 'InteractiveMarker'
 
 #def Initialize_Adapy(args, env_path='/environments/tablewithobjects_assisttest.env.xml'):
-def Initialize_Env(visualize=False):
-    env = SimpleEnv(visualize)
-    #Init_Robot(robot)
+# def Initialize_Env(visualize=False):
+#     env = SimpleEnv(visualize)
+#     #Init_Robot(robot)
     
-    return env
+#     return env
 
 def Initialize_Goals(env,  randomize_goal_init=False):
   while True:
@@ -319,6 +319,7 @@ def Init_Goals(env, robot, randomize_goal_init=False):
     for i in range(len(env.cup1_details['grasp'])):
         cup1 = {'obj':env.cup1,'grasp':env.cup1_grasp[i],'name': env.cup1_name[i],'positions':env.cup1_poslist[i],'quats':env.cup1_quatlist[i]}
         goal_objects.append(cup1)
+        print(env.cup1_name[i],env.cup1_poslist[i])
     # for i in range(len(env.cup2_details['grasp'])):
     #     cup2 = {'obj':env.cup2,'grasp':env.cup2_grasp[i],'name': env.cup2_name[i],'positions':env.cup2_poslist[i],'quats':env.cup2_quatlist[i]}
     #     goal_objects.append(cup2)
@@ -331,11 +332,13 @@ def Init_Goals(env, robot, randomize_goal_init=False):
         mug = {'obj':env.mug,'grasp':env.mug_grasp[i],'name': env.mug_name[i],'positions':env.mug_poslist[i],'quats':env.mug_quatlist[i]}
         #print("IM GONNA MUG YOU:", env.mug_quatlist[i])
         goal_objects.append(mug)
+        print(env.mug_name[i],env.mug_poslist[i])
 
     #Salt+Pepper and container
     for i in range(len(env.salt_details['grasp'])):
         salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'name': env.salt_name[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
         goal_objects.append(salt)
+        print(env.salt_name[i],env.salt_poslist[i])
 
     # for i in range(len(env.pepper_details['grasp'])):
     #     pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'name': env.pepper_name[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}

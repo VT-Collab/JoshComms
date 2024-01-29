@@ -28,23 +28,23 @@ class SimpleEnv():
         # Cup 1
         self.cup1 = YCBObject("002_master_chef_can")
         self.cup1.load()
-        self.cup1_position = [0.3, 0.3, 0.075]
-        self.cup1_poslist = [[0.3, 0.3, 0.075]]
+        self.cup1_position = [0.3, 0.3, 0.1]
+        self.cup1_poslist = [[0.3, 0.3, 0.1]]
         self.cup1_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
         self.cup1_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.cup1.set_position_orientation(self.cup1_position, self.cup1_quaternion)
         self.cup1_grasp = [0]
-        self.cup1_name = ["Red Cup"]
+        self.cup1_name = ["Cup"]
         self.cup1_details = {'obj':self.cup1,'grasp':self.cup1_grasp,'name': self.cup1_name,'positions':self.cup1_poslist,'quats':self.cup1_quatlist,'num':len(self.cup1_grasp)}
 
         #Task 3
         # load mug for pose correction task
         self.mug = YCBObject("025_mug")
         self.mug.load()
-        self.mug_position = [0.5, -0.0, 0.035]
-        self.mug_poslist = [[0.5, -0.0, 0.075]]
+        self.mug_position = [0.5, -0.0, 0.1]
+        self.mug_poslist = [[0.5, -0.0, 0.1]]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
@@ -62,15 +62,15 @@ class SimpleEnv():
         #Salt Shaker
         self.salt = RBOObject("block")
         self.salt.load()
-        self.salt_position = [0.7, 0.3, 0.05]
-        self.salt_poslist = [[0.7, 0.3, 0.075]]
+        self.salt_position = [0.7, 0.3, 0.1]
+        self.salt_poslist = [[0.7, 0.3, 0.1]]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
         self.salt_quatlist = [[1.0  ,       0.    ,     0., 0.]]
         self.salt_grasp = [0]
         self.salt.set_position_orientation(self.salt_position, self.salt_quaternion)
-        self.salt_name = ["Salt"]
+        self.salt_name = ["Bowl"]
 
         self.salt_details = {'obj':self.salt,'grasp':self.salt_grasp,'name': self.salt_name,'positions':self.salt_poslist,'quats':self.salt_quatlist,'num':len(self.salt_grasp)}
 
