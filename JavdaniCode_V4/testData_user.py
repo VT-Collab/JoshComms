@@ -24,8 +24,12 @@ def get_error(data):
 
 
 
-user = 4
-
+user = 7 #Good Users 4,6,7,8,9,10,11,12,13 Alright Users 1,6
+#user8 = [.45,.275],[.65,-.15],[.65,.25]
+#user7 = [.45,.275],[.65,-.15],[.65,.25]
+#user5 = [.45,.275],[.65,-.15],[.65,.25]
+#user6= [.45,.275],[.65,-.2],[.65,.25]
+#user4 = [.3,.35],[.5,-.25],[.48,.335]
 demo = 0
 Comms = [ 
     [2,6,4,3,5,1], #1
@@ -80,9 +84,13 @@ for i in range(6):
 
     
     InputList = InputList[0:j]
+    #Input Mag
+    # for j in range(len(InputList)):
+    #     InputTotal += np.sum(np.abs(InputList[j]))
+    #Input Count
     for j in range(len(InputList)):
-        InputTotal += np.sum(np.abs(InputList[j]))
-        #print((np.abs(InputList[j])),InputList[j])
+        if np.sum(np.abs(InputList[j])) > .25:
+            InputTotal += 1
     InputData[Setup-1] = InputTotal
     if Setup == 2 or Setup == 4 or Setup == 6:
         W_Comm += InputTotal
