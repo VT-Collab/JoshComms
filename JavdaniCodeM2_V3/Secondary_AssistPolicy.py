@@ -27,11 +27,12 @@ class SecondaryPolicy:
       goal_policy.update(robot_state, self.user_action,goal_distrib)
 
   def get_values(self):
-    # values = np.ndarray(len(self.goal_assist_policies))
+    values = np.ndarray(len(self.goal_assist_policies))
     # qvalues = np.ndarray(len(self.goal_assist_policies))
     BaseQvalues = np.ndarray(len(self.goal_assist_policies))
     for ind,goal_policy in enumerate(self.goal_assist_policies):
       BaseQvalues[ind] = goal_policy.get_qvalue()
+      values[ind] = goal_policy.get_value()
       #print(values[ind]-qvalues[ind])
     #time.sleep(20)
 

@@ -29,6 +29,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     z = (1-b)*user_action + b*self.get_action()
 
     self.robot_state_after_action = self.state_after_user_action(robot_state, z)
+    #self.robot_state_after_action2 = self.state_after_user_action(robot_state, self.get_action())
 
     self.position_after_action,self.pose_after_action = joint2pose(self.robot_state_after_action)
     self.robot_position,self.robot_pose = joint2pose(self.robot_state["q"])
@@ -65,7 +66,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     return robot_qdot
   
   def base_Q(self):
-    return (self.get_value_translation(self.dist_translation_aftertrans) + np.linalg.norm(self.user_action))
+    return (self.get_qvalue_translation() + np.linalg.norm(self.user_action))
   
 
 

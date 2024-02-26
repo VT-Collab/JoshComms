@@ -12,7 +12,7 @@ class GoalPredictor(object):
     self.log_goal_distribution = np.log((1./len(self.goals))*np.ones(len(self.goals))) #scalar
 
 
-  def update_distribution(self, BaseQVal,user_action,robot_state):
+  def update_distribution(self, values, BaseQVal,user_action,robot_state):
     #Here bring in z for qv
     self.log_goal_distribution *= np.exp(-BaseQVal)
     
