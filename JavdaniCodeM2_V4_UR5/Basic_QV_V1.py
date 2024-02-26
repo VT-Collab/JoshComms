@@ -25,8 +25,8 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
     self.user_action = user_action
 
     b = goal_distrib[self.goal_index]
-    z = user_action
-    #z = (1-b)*user_action + b*self.get_action()
+    #z = user_action
+    z = (1-b)*user_action + b*self.get_action()
 
     self.robot_state_after_action = self.state_after_user_action(robot_state, z)
     #self.robot_state_after_action2 = self.state_after_user_action(robot_state, self.get_action())
