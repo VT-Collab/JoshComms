@@ -23,16 +23,16 @@ if __name__ == "__main__":
   parser.add_argument('-joy_dofs', '--num-input-dofs', help='number of dofs of input, either 2 or 3', type=int, default=2)
   args = parser.parse_args()
 
-  env = SimpleEnv(visualize=True)
+  env = SimpleEnv(visualize=False)
 
   for i in range(1):
     #goals, goal_objects = Initialize_Goals(env, robot, randomize_goal_init=False)
     goals, goal_objects = Initialize_Goals(env, randomize_goal_init=False)
     #print("HOT POTATO")
     ada_handler = AdaHandler(env, goals, goal_objects,user=200,demo=1) #goal objects is env objects, goals are GOAL object made from env objects
-    #ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=True)
+    ada_handler.execute_policy(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=False,algo_enabled = True)
     #ada_handler.execute_policy_simControlled(direct_teleop_only=False, fix_magnitude_user_command=False,w_comms=False,algo_enabled = True)
-    ada_handler.execute_policy_sim(direct_teleop_only=False, fix_magnitude_user_command=True,w_comms=False,algo_enabled = True)
+    #ada_handler.execute_policy_sim(direct_teleop_only=False, fix_magnitude_user_command=True,w_comms=False,algo_enabled = True)
   #ada_handler.execute_direct_teleop(simulate_user=False)
 
 

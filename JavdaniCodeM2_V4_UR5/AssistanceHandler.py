@@ -1,5 +1,4 @@
 #The basic ADA interface, such as executing end effector motions, getting the state of the robot, etc.
-from tracemalloc import start
 from Primary_AssistPolicy import *
 from UserBot import *
 #import AssistancePolicyVisualizationTools as vistools
@@ -311,9 +310,9 @@ class AdaHandler:
 			# 	begining = False
 			#get pose of min value target for user's goal
 			self.robot_state = self.env.panda.state
-			q = self.robot_state['q']
+			q = self.robot_state['q'][0:5]
 			x = self.robot_state['x']
-			
+			time.sleep(5)
 			xdot = User.get_usr_cmd(x[0:3])
 			xdot_full = [xdot[0],xdot[1],xdot[2],0,0,0]
 			
@@ -358,4 +357,181 @@ class AdaHandler:
 			end_time=time.time()
 			self.env.step(joint = action,mode = 0, grasp = grasp)
 
-	
+	def execute_policy(self, direct_teleop_only=False, blend_only=True, fix_magnitude_user_command=True, w_comms = True,algo_enabled = False):
+
+		rospy.init_node("teleop")
+
+		mover = TrajectoryClient()
+		joystick = Joystick()
+		start_time = timestep = timest = time.time()
+		rate = rospy.Rate(1000)
+		motor = False
+		pick = False
+		pick_count = 0
+
+		print("[*] Initialized, Moving Home")
+		mover.switch_controller(mode='position')
+		mover.send_joint(HOME, 2.0)
+		mover.client.wait_for_result()
+		mover.switch_controller(mode='velocity')
+		print("[*] Ready for joystick inputs")
+
+		q = mover.samplejoint()
+		qclose = q + np.random.normal(0, 0.1, 6)
+
+
+		if (w_comms == True):
+			PORT_comms = 8642
+			#Inner_port = 8640
+			print("connecting to comms")
+			conn2 = connect2comms(PORT_comms)
+
+		action_scale = 0.03
+		
+		auto_or_noto = True
+		autoplus = False
+		grasp = True
+
+		#set the huber constants differently if the robot movement magnitude is fixed to user input magnitude
+		if not direct_teleop_only and fix_magnitude_user_command:
+			for goal_policy in self.robot_policy.assist_policy.goal_assist_policies:
+				for target_policy in goal_policy.target_assist_policies:
+					target_policy.set_constants(huber_translation_linear_multiplier=1.55, huber_translation_delta_switch=0.11, huber_translation_constant_add=0.2, huber_rotation_linear_multiplier=0.20, huber_rotation_delta_switch=np.pi/72., huber_rotation_constant_add=0.3, huber_rotation_multiplier=0.20, robot_translation_cost_multiplier=14.0, robot_rotation_cost_multiplier=0.05)
+					target_policy.set_observation(algo_enabled)
+
+		start_time = time.time()
+		sim_time = 0.0
+		end_time=time.time()
+		left_time = time.time()-2
+		right_time = time.time()-2
+		b_time = time.time() - 2
+
+		# StateList = [q]
+		# UserActionList = [[0]*7]
+		# AutoActionList = [[0]*7]
+		start = time.time()
+		while True:
+			#print("Runnin",time.time()-start)
+			start = time.time()
+			
+			xdot = [0]*6
+			# if begining:
+
+			# 	time.sleep(.2)
+			# 	begining = False
+			#get pose of min value target for user's goal
+			#self.robot_state = self.env.panda.state
+			q = mover.joint_states
+			x = mover.joint2pose()
+			# J = mover.kdl_kin.jacobian(mover.joint_states)
+			# T = mover.kdl_kin.forward(q)
+			self.robot_state = {"q":q,"x":x}
+			z, [A_pressed, B_pressed, X_pressed, Y_pressed],  STOP = joystick.getInput()
+		
+			# if A_pressed:
+			# 	xdot[3] = -action_scale * z[0]
+			# 	xdot[4] = action_scale * z[1]
+			# 	xdot[5] = action_scale * z[2]
+			# else:
+			xdot[0] = action_scale * z[1]
+			xdot[1] = action_scale * z[0]
+			xdot[2] = -action_scale * z[2]
+			
+
+			direct_teleop_action = (mover.xdot2qdot(xdot)) #qdot
+
+			# if LeftT and ((end_time-left_time)>.2):
+			# 	left_time = time.time()
+			# 	auto_or_noto = not auto_or_noto
+			# 	#if left trigger not being hit, then execute with assistance
+			# 	print("HELPING = ", auto_or_noto)
+			# if RightT and ((end_time-right_time)>.2):
+			# 	right_time = time.time()
+			# 	autoplus = not autoplus
+			# 	print("HELPING Plus = ", autoplus)
+			
+			if not direct_teleop_only:
+				#When this updates, it updates assist policy and goal policies
+				
+				goal_distribution = self.robot_policy.goal_predictor.get_distribution()
+				#print("Salt,Pepper,plate,fork,fork2,spoon,spoon2,cup,mug",goal_distribution)
+				# print("Salt,",goal_distribution[0])
+				# print("Pepper,",goal_distribution[1])
+				# print("plate",goal_distribution[2])
+				# print("fork,g",goal_distribution[3])
+				# print("fork2,",goal_distribution[4])
+				# print("spoon,",goal_distribution[5])
+				# print("spoon2",goal_distribution[6])
+				# print("cup",goal_distribution[7])
+				# print("mug",goal_distribution[8])
+				max_ind = np.where(goal_distribution == np.max(goal_distribution))[0]
+				maxed = self.goals[max_ind[0]]
+				#print(maxed.name)
+				self.robot_policy.update(self.robot_state, direct_teleop_action)
+				if (w_comms == True):
+					#print("SENT",self.robot_state['q'])
+					send2comms(conn2, goal_distribution)
+					#sim_time = time.time()
+				if auto_or_noto:
+					#action = direct_teleop_action
+					action = self.robot_policy.get_blend_action() #uses in built variables brought by update into maintained class
+					
+				else:
+				
+					action = direct_teleop_action
+			else:
+				action = direct_teleop_action
+			
+			if X_pressed:
+				#send2gripper(conn_gripper, "c")
+				grasp = False
+				print("closed")
+				time.sleep(0.5)
+				
+			if Y_pressed:
+				print("OPEN")
+				#send2gripper(conn_gripper, "o")
+				grasp = True
+				time.sleep(0.5)
+			#self.env.step(joint = action,mode = 0)
+			if STOP:
+				print("[*] Initialized, Moving Home")
+				mover.switch_controller(mode='position')
+				mover.send_joint(HOME, 4.0)
+				mover.client.wait_for_result()
+				mover.switch_controller(mode='velocity')
+				print("[*] Done!")
+			
+				
+				return True
+
+			if end_time-start_time > 3000.0:
+				print("DONE DONE DONE")
+				break
+
+			if B_pressed and ((end_time-b_time)>.4):
+				#print("Robot Pos",x)
+				v,q = self.robot_policy.assist_policy.get_values()
+				action = self.robot_policy.assist_policy.report_assisted_action(goal_distribution)
+				for i in self.goals:
+					dist = x[0:3]-i.pos
+					print(i.name,dist, "Net",np.linalg.norm(dist))
+				print("v,q:",v,q)
+				b_time = time.time()
+				print("Conf",goal_distribution)
+
+			end_time=time.time()
+			#joystick.getAction(axes)
+#			print("Action",action)
+			# if True:
+			# 	print("Uh Oh")
+			# 	mover.switch_controller(mode='position')
+			# 	mover.send_joint(HOME, 4.0)
+			# 	mover.client.wait_for_result()
+			# 	mover.switch_controller(mode='velocity')
+			# 	print("[*] Done!")
+			# 	break
+			mover.sendQ((direct_teleop_action))
+			mover.client.wait_for_result()
+			#print("CYCLED")
+			

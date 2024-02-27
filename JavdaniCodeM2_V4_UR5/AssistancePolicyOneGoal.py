@@ -4,7 +4,7 @@ import numpy as np
 #import IPython
 #import AssistancePolicyOneTarget as TargetPolicy
 #import HuberAssistancePolicy as TargetPolicy
-import QVAssistancePolicyV2 as TargetPolicy
+import Basic_QV_V1 as TargetPolicy
 
 TargetPolicyClass = TargetPolicy.HuberAssistancePolicy
 
@@ -16,17 +16,17 @@ class AssistancePolicyOneGoal:
     self.target_assist_policies = []
     for pose in self.goal.target_poses:
       #a = self.goal.pos
-      #print(np.shape(a))
+      
       self.target_assist_policies.append(TargetPolicyClass(goal))
       
     self.min_val_ind = 0
 
-  def update(self, robot_state, user_action,goal_distrib=[]):
+  def update(self, robot_state, user_action,max_goal_pos=None,goal_distrib=[]):
     self.last_robot_state = robot_state
     self.last_user_action = user_action
 
     for target_policy in self.target_assist_policies:
-      target_policy.update(robot_state, user_action,goal_distrib)
+      target_policy.update(robot_state, user_action,max_goal_pos,goal_distrib)
 
     values = [targ_policy.get_value() for targ_policy in self.target_assist_policies]
     self.min_val_ind = np.argmin(values)
@@ -37,7 +37,7 @@ class AssistancePolicyOneGoal:
   def get_qvalue(self):
     return self.target_assist_policies[self.min_val_ind].get_qvalue()
   
-  def get_BaseQvalue(self):
+  def get_BaseQValue(self):
     return self.target_assist_policies[self.min_val_ind].base_Q()
 
   def get_action(self):

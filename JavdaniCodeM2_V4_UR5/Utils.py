@@ -8,10 +8,41 @@ import sys
 from scipy.interpolate import interp1d
 import pygame
 #import pyrealsense2 as rs
-from tkinter import *
+from Tkinter import *
 import tf as transmethods
 
-#from env3 import SimpleEnv
+import rospy
+import actionlib
+from urdf_parser_py.urdf import URDF
+from pykdl_utils.kdl_kinematics import KDLKinematics
+import copy
+from collections import deque
+
+from std_msgs.msg import Float64MultiArray
+
+from controller_manager_msgs.srv import (
+    SwitchController, 
+    SwitchControllerRequest, 
+    SwitchControllerResponse
+)
+
+from control_msgs.msg import (
+    FollowJointTrajectoryAction,
+    FollowJointTrajectoryGoal,
+    GripperCommandAction,
+    GripperCommandGoal,
+    GripperCommand
+)
+from trajectory_msgs.msg import (
+    JointTrajectoryPoint
+)
+from sensor_msgs.msg import (
+    JointState
+)
+from geometry_msgs.msg import(
+    TwistStamped,
+    Twist
+)
 
 def RotationMatrixDistance(pose1, pose2):
   quat1 = transmethods.quaternion_from_matrix(pose1)
@@ -57,90 +88,47 @@ def ApplyAngularVelocityToQuaternion(angular_velocity, quat, time=1.):
 
   return transmethods.quaternion_multiply(quat_from_velocity, quat)
 
-
-
-
-
-
-
-
-
 #Collab code
 
-"""Home Position for Panda for all tasks"""
-HOME = [0.8385, -0.0609, 0.2447, -1.5657, 0.0089, 1.5335, 1.8607]
+HOME = [-0.03213388124574834, -1.2609770933734339, -1.842959229146139, \
+        -np.pi/2, 1.55, 0]
 
-  
-"""Connecting and Sending commands to robot"""
-def connect2robot(PORT):
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  s.bind(('172.16.0.3', PORT))
-  s.listen()
-  conn, addr = s.accept()
-  return conn
 
-def send2robot(conn, qdot, limit=1.0):
-    qdot = np.asarray(qdot)
-    scale = np.linalg.norm(qdot)
-    if scale > limit:
-        qdot = np.asarray([qdot[i] * limit/scale for i in range(7)])
-    send_msg = np.array2string(qdot, precision=5, separator=',',suppress_small=True)[1:-1]
-    send_msg = "s," + send_msg + ","
-    conn.send(send_msg.encode())
 
-def connect2gripper(PORT):
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  s.bind(('172.16.0.3', PORT))
-  s.listen()
-  conn, addr = s.accept()
-  return conn
+# STEP_SIZE_L = 0.15
+STEP_SIZE_L = 0.1
+STEP_SIZE_A = 0.2 * np.pi / 4
+STEP_TIME = 0.01
+DEADBAND = 0.1
+MOVING_AVERAGE = 100
 
-def send2gripper(conn, arg):
-  # print('-----function called')
-  send_msg = arg
-  conn.send(send_msg.encode())
+robot_urdf = URDF.from_parameter_server()
+# def joint2pose(q):
+#         base_link = "base_link"
+#         end_link = "wrist_3_link"
+#         #robot_urdf = URDF.from_parameter_server()
+#         kdl_kin = KDLKquetioninematics(robot_urdf, base_link, end_link)
 
-def listen2robot(conn):
-  state_length = 7 + 7 + 7 + 6 + 42
-  message = str(conn.recv(2048))[2:-2]
-  state_str = list(message.split(","))
-  for idx in range(len(state_str)):
-    if state_str[idx] == "s":
-      state_str = state_str[idx+1:idx+1+state_length]
-      break
-  try:
-    state_vector = [float(item) for item in state_str]
-  except ValueError:
-    return None
-  if len(state_vector) is not state_length:
-    return None
-  state_vector = np.asarray(state_vector)
-  state = {}
-  state["q"] = state_vector[0:7]
-  state["dq"] = state_vector[7:14]
-  state["tau"] = state_vector[14:21]
-  state["O_F"] = state_vector[21:27]
-  # print(state_vector[21:27])
-  state["J"] = state_vector[27:].reshape((7,6)).T
+#         state = kdl_kin.forward(q)
+#         pos = np.array(state[:3,3]).T
+#         pos = pos.squeeze().tolist()
+#         R = state[:,:3][:3]
+#         euler = transmethods.euler_from_matrix(R)
 
-  # get cartesian pose
-  xyz_lin, R = joint2pose(state_vector[0:7])
-  beta = -np.arcsin(R[2,0])
-  alpha = np.arctan2(R[2,1]/np.cos(beta),R[2,2]/np.cos(beta))
-  gamma = np.arctan2(R[1,0]/np.cos(beta),R[0,0]/np.cos(beta))
-  xyz_ang = [alpha, beta, gamma]
-  xyz = np.asarray(xyz_lin).tolist() + np.asarray(xyz_ang).tolist()
-  state["x"] = np.array(xyz)
-  return state
+        # return pos,state
+def getJ(robot_state):
+    joint_states = robot_state["q"]
+    base_link = "base_link"
+    end_link = "wrist_3_link"
+    
+    kdl_kin = KDLKinematics(robot_urdf, base_link, end_link)
+    J = kdl_kin.jacobian(joint_states)
 
-def readState(conn):
-  while True:
-    state = listen2robot(conn)
-    if state is not None:
-      break
-  return state
+def xdot2qdot(xdot,robot_state, J):
+        if J == None:
+          J =getJ(robot_state)
+        J_inv = np.linalg.pinv(J)
+        return J_inv.dot(xdot)
 
 def connect2comms(PORT):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -163,38 +151,10 @@ def listen2comms(conn):
     state_length = 7 + 7 + 7 + 6 + 42
     message = str(conn.recv(2048))[2:-2]
     state_str = list(message.split(","))
-    #print(state_str)
+
     if message is not None:
         return state_str   
     return None
-
-def xdot2qdot(xdot, state):
-  J_pinv = np.linalg.pinv(state["J"])
-  xdot[3] = wrap_angles(xdot[3])
-  xdot[4] = wrap_angles(xdot[4])
-  xdot[5] = wrap_angles(xdot[5])
-  
-  return J_pinv @ np.asarray(xdot)
-
-def joint2pose(q):
-  def RotX(q):
-    return np.array([[1, 0, 0, 0], [0, np.cos(q), -np.sin(q), 0], [0, np.sin(q), np.cos(q), 0], [0, 0, 0, 1]])
-  def RotZ(q):
-    return np.array([[np.cos(q), -np.sin(q), 0, 0], [np.sin(q), np.cos(q), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-  def TransX(q, x, y, z):
-    return np.array([[1, 0, 0, x], [0, np.cos(q), -np.sin(q), y], [0, np.sin(q), np.cos(q), z], [0, 0, 0, 1]])
-  def TransZ(q, x, y, z):
-    return np.array([[np.cos(q), -np.sin(q), 0, x], [np.sin(q), np.cos(q), 0, y], [0, 0, 1, z], [0, 0, 0, 1]])
-  H1 = TransZ(q[0], 0, 0, 0.333)
-  H2 = np.dot(RotX(-np.pi/2), RotZ(q[1]))
-  H3 = np.dot(TransX(np.pi/2, 0, -0.316, 0), RotZ(q[2]))
-  H4 = np.dot(TransX(np.pi/2, 0.0825, 0, 0), RotZ(q[3]))
-  H5 = np.dot(TransX(-np.pi/2, -0.0825, 0.384, 0), RotZ(q[4]))
-  H6 = np.dot(RotX(np.pi/2), RotZ(q[5]))
-  H7 = np.dot(TransX(np.pi/2, 0.088, 0, 0), RotZ(q[6]))
-  H_panda_hand = TransZ(-np.pi/4, 0, 0, 0.2105)
-  H = np.linalg.multi_dot([H1, H2, H3, H4, H5, H6, H7, H_panda_hand])
-  return H[:,3][:3], H[:,:][:]
 
 def wrap_angles(theta):
   if theta < -np.pi:
@@ -207,79 +167,46 @@ def wrap_angles(theta):
 
 class Joystick(object):
 
-  def __init__(self):
-    pygame.init()
-    self.gamepad = pygame.joystick.Joystick(0)
-    self.gamepad.init()
-    self.deadband = 0.1
-    self.timeband = 0.5
-    self.lastpress = time.time()
+    def __init__(self):
+        pygame.init()
+        self.gamepad = pygame.joystick.Joystick(0)
+        self.gamepad.init()
+        self.action = None
+        self.A_pressed = False
+        self.B_pressed = False
+        self.X_pressed = False
+        self.Y_pressed = False
+        self.LT = False
+        self.RT = False
 
-  def input(self):
-    pygame.event.get()
-    curr_time = time.time()
-    z1 = self.gamepad.get_axis(0)
-    z2 = self.gamepad.get_axis(1)
-    z3 = self.gamepad.get_axis(3)
-    if abs(z1) < self.deadband:
-      z1 = 0.0
-    if abs(z2) < self.deadband:
-      z2 = 0.0
-    if abs(z3) < self.deadband:
-      z3 = 0.0
-    A_pressed = self.gamepad.get_button(0) 
-    B_pressed = self.gamepad.get_button(1) 
-    X_pressed = self.gamepad.get_button(2) 
-    Y_pressed = self.gamepad.get_button(3) 
-    START_pressed = self.gamepad.get_button(6) 
-    STOP_pressed = self.gamepad.get_button(8) 
-    Right_trigger = self.gamepad.get_button(5)
-    Left_Trigger = self.gamepad.get_button(4)
-    if A_pressed or START_pressed or B_pressed:
-      self.lastpress = curr_time
-    return [z1, z2, z3], A_pressed, B_pressed, X_pressed, Y_pressed, START_pressed, STOP_pressed, Right_trigger, Left_Trigger
-     
-  def rumble(self,time):
-    self.gamepad.rumble(1,1,time)
-# class Joystick(object):
+    def getInput(self):
+        pygame.event.get()
+        self.A_pressed = self.gamepad.get_button(0)
+        self.B_pressed = self.gamepad.get_button(1)
+        self.X_pressed = self.gamepad.get_button(2)
+        self.Y_pressed = self.gamepad.get_button(3)
+        self.LT = self.gamepad.get_button(4)
+        self.RT = self.gamepad.get_button(5)
+        return self.getEvent()
 
-#   def __init__(self):
-#     pygame.init()
-#     self.gamepad = pygame.joystick.Joystick(0)
-#     self.gamepad.init()
-#     self.deadband = 0.1
-#     self.timeband = 0.5
-#     self.lastpress = time.time()
+    def getEvent(self):
+        z1 = self.gamepad.get_axis(0)
+        z2 = self.gamepad.get_axis(1)
+        z3 = self.gamepad.get_axis(4)
+        z = [z1, z2, z3]
+        for idx in range(len(z)):
+            if abs(z[idx]) < DEADBAND:
+                z[idx] = 0.0
+        stop = self.gamepad.get_button(7)
+        self.A_pressed = self.gamepad.get_button(0)
+        self.B_pressed = self.gamepad.get_button(1)
+        self.X_pressed = self.gamepad.get_button(2)
+        self.Y_pressed = self.gamepad.get_button(3)
+        return z, (self.A_pressed,self.B_pressed,self.X_pressed,self.Y_pressed), stop
 
-#   def input(self):
-#     pygame.event.get()
-#     curr_time = time.time()
-#     z1 = self.gamepad.get_axis(0)
-#     z2 = self.gamepad.get_axis(1)
-#     z3 = self.gamepad.get_axis(3)
-#     if abs(z1) < self.deadband:
-#       z1 = 0.0
-#     if abs(z2) < self.deadband:
-#       z2 = 0.0
-#     if abs(z3) < self.deadband:
-#       z3 = 0.0
-#     A_pressed = self.gamepad.get_button(0) 
-#     B_pressed = self.gamepad.get_button(1) 
-#     X_pressed = self.gamepad.get_button(2) 
-#     Y_pressed = self.gamepad.get_button(3) 
-#     START_pressed = self.gamepad.get_button(7) 
-#     STOP_pressed = self.gamepad.get_button(6) 
-#     Right_trigger = self.gamepad.get_button(5)
-#     Left_Trigger = self.gamepad.get_button(4)
-#     if A_pressed or START_pressed or B_pressed:
-#       self.lastpress = curr_time
-#     return [z1, z2, z3], A_pressed, B_pressed, X_pressed, Y_pressed, START_pressed, STOP_pressed, Right_trigger, Left_Trigger
-     
-#   def rumble(self,time):
-#     self.gamepad.rumble(1,1,time)
-  
-VIEWER_DEFAULT = 'InteractiveMarker'
-
+    def getAction(self, z, jaw = [0,0,0]):
+        self.action = (STEP_SIZE_L * -z[1], STEP_SIZE_L * -z[0], STEP_SIZE_L * -z[2], 0, 0, 0)
+        #self.gamepad.rumble(1,1,time)
 
 def Initialize_Goals(env,  randomize_goal_init=False):
   while True:
@@ -302,41 +229,50 @@ def Init_Goals(env, robot, randomize_goal_init=False):
     # goal_objects.append(env.block1)
     # goal_objects.append(env.block2)
     # goal_objects.append(env.block3)
-    # goal_objects.append(env.door)
-    
+    # goal_objects.append(env.door)\
+    #Salt,Pepper,plate,fork,fork2,spoon,spoon2,cup,mug
+    #Salt+Pepper and container
+    for i in range(len(env.salt_details['grasp'])):
+        salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'name': env.salt_name[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
+        goal_objects.append(salt)
+
+
+    for i in range(len(env.pepper_details['grasp'])):
+        pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'name': env.pepper_name[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}
+        goal_objects.append(pepper)
+
+    for i in range(len(env.plate_details['grasp'])):
+        plate = {'obj':env.plate,'grasp':env.plate_grasp[i],'name': env.plate_name[i],'positions':env.plate_poslist[i],'quats':env.plate_quatlist[i]}
+        goal_objects.append(plate)
+
+
     #fork
-    # for i in range(len(env.fork_details['grasp'])):
-    #     fork1 = {'obj':env.fork,'grasp':env.fork_grasp[i],'name': env.fork_name[i],'positions':env.fork_poslist[i],'quats':env.fork_quatlist[i]}
-    #     goal_objects.append(fork1)
+    for i in range(len(env.fork_details['grasp'])):
+        fork = {'obj':env.fork,'grasp':env.fork_grasp[i],'name': env.fork_name[i],'positions':env.fork_poslist[i],'quats':env.fork_quatlist[i]}
+        goal_objects.append(fork)
+
+    for i in range(len(env.fork2_details['grasp'])):
+        fork2 = {'obj':env.fork2,'grasp':env.fork2_grasp[i],'name': env.fork2_name[i],'positions':env.fork2_poslist[i],'quats':env.fork2_quatlist[i]}
+        goal_objects.append(fork2)
+    #Spoon
+    for i in range(len(env.spoon_details['grasp'])):
+        Spoon = {'obj':env.spoon,'grasp':env.spoon_grasp[i],'name': env.spoon_name[i],'positions':env.spoon_poslist[i],'quats':env.spoon_quatlist[i]}
+        goal_objects.append(Spoon)
+    for i in range(len(env.spoon2_details['grasp'])):
+        Spoon2 = {'obj':env.spoon2,'grasp':env.spoon2_grasp[i],'name': env.spoon2_name[i],'positions':env.spoon2_poslist[i],'quats':env.spoon2_quatlist[i]}
+        goal_objects.append(Spoon2)
     
     #Cups
     for i in range(len(env.cup1_details['grasp'])):
         cup1 = {'obj':env.cup1,'grasp':env.cup1_grasp[i],'name': env.cup1_name[i],'positions':env.cup1_poslist[i],'quats':env.cup1_quatlist[i]}
         goal_objects.append(cup1)
-        #print(env.cup1_name[i],env.cup1_poslist[i])
-    # for i in range(len(env.cup2_details['grasp'])):
-    #     cup2 = {'obj':env.cup2,'grasp':env.cup2_grasp[i],'name': env.cup2_name[i],'positions':env.cup2_poslist[i],'quats':env.cup2_quatlist[i]}
-    #     goal_objects.append(cup2)
-    # for i in range(len(env.cup3_details['grasp'])):
-    #     cup3 = {'obj':env.cup3,'grasp':env.cup3_grasp[i],'name': env.cup3_name[i],'positions':env.cup3_poslist[i],'quats':env.cup3_quatlist[i]}
-    #     goal_objects.append(cup3)
-
     #Mug
     for i in range(len(env.mug_details['grasp'])):
         mug = {'obj':env.mug,'grasp':env.mug_grasp[i],'name': env.mug_name[i],'positions':env.mug_poslist[i],'quats':env.mug_quatlist[i]}
-        #print("IM GONNA MUG YOU:", env.mug_quatlist[i])
+   
         goal_objects.append(mug)
-        #print(env.mug_name[i],env.mug_poslist[i])
 
-    #Salt+Pepper and container
-    # for i in range(len(env.salt_details['grasp'])):
-    #     salt = {'obj':env.salt,'grasp':env.salt_grasp[i],'name': env.salt_name[i],'positions':env.salt_poslist[i],'quats':env.salt_quatlist[i]}
-    #     goal_objects.append(salt)
-        #print(env.salt_name[i],env.salt_poslist[i])
 
-    # for i in range(len(env.pepper_details['grasp'])):
-    #     pepper = {'obj':env.pepper,'grasp':env.pepper_grasp[i],'name': env.pepper_name[i],'positions':env.pepper_poslist[i],'quats':env.pepper_quatlist[i]}
-    #     goal_objects.append(pepper)
 
     # for i in range(len(env.container_details['grasp'])):
 
@@ -410,10 +346,10 @@ class Goal:
       self.ind = index
       #self.compute_quaternions_from_target_poses()
 
-      #print 'NUM POSES: ' + str(len(self.target_poses))
+      
 
     # def compute_quaternions_from_target_poses(self):
-    #   #print(self.target_poses)
+
     #   self.target_quaternions = [transmethods.quaternion_from_matrix(target_pose) for target_pose in self.target_poses]
     
     def at_goal(self, end_effector_trans):
@@ -421,7 +357,7 @@ class Goal:
         pos_diff =  self.pos - end_effector_trans[0:3,3]
         trans_dist = np.linalg.norm(pos_diff)
         
-        #print("Quat",quat)
+
         quat_dist = QuaternionDistance(transmethods.quaternion_from_matrix(end_effector_trans), quat)
 
         if (trans_dist < 0.01) and (quat_dist < np.pi/48):
@@ -447,4 +383,163 @@ class GUI_Interface(object):
 		self.textbox1 = Entry(self.root, width = 8, bg = "white", fg=self.fg, borderwidth = 3, font=(font, 40))
 		self.textbox1.grid(row = 1, column = 0,  pady = 10, padx = 20)
 		self.textbox1.insert(0,0)
-				
+	
+class TrajectoryClient(object):
+
+    def __init__(self):
+        # Action client for joint move commands
+        self.client = actionlib.SimpleActionClient(
+                '/scaled_pos_joint_traj_controller/follow_joint_trajectory',
+                FollowJointTrajectoryAction)
+        self.client.wait_for_server()
+        # Velocity commands publisher
+        self.vel_pub = rospy.Publisher('/joint_group_vel_controller/command',\
+                 Float64MultiArray, queue_size=10)
+        # Subscribers to update joint state
+        self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_states_cb)
+        # service call to switch controllers
+        self.switch_controller_cli = rospy.ServiceProxy('/controller_manager/switch_controller',\
+                 SwitchController)
+        self.joint_names = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",\
+                            "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
+        self.joint_states = None
+        self.base_link = "base_link"
+        self.end_link = "wrist_3_link"
+        self.robot_urdf = URDF.from_parameter_server()
+        self.kdl_kin = KDLKinematics(self.robot_urdf, self.base_link, self.end_link)
+        use = .9
+        self.joint_limits_low = [-use*2*np.pi,-use*2*np.pi,-use*2*np.pi,-use*2*np.pi,-use*2*np.pi,-use*2*np.pi]
+        self.joint_limits_upper = [use*2*np.pi,use*2*np.pi,use*2*np.pi,use*2*np.pi,use*2*np.pi,use*2*np.pi]
+
+        self.joint_limits_lower = list(self.joint_limits_low)
+        self.joint_limits_upper = list(self.joint_limits_upper)
+
+        self.kdl_kin.joint_limits_lower = self.joint_limits_lower
+        self.kdl_kin.joint_limits_upper = self.joint_limits_upper
+        self.kdl_kin.joint_safety_lower = self.joint_limits_lower
+        self.kdl_kin.joint_safety_upper = self.joint_limits_upper
+        # # Gripper action and client
+        # action_name = rospy.get_param('~action_name', 'command_robotiq_action')
+        # self.robotiq_client = actionlib.SimpleActionClient(action_name, \
+        #                         CommandRobotiqGripperAction)
+        # self.robotiq_client.wait_for_server()
+        # # Initialize gripper
+        # goal = CommandRobotiqGripperGoal()
+        # goal.emergency_release = False
+        # goal.stop = False
+        # goal.position = 1.00
+        # goal.speed = 0.1
+        # goal.force = 5.0
+        # # Sends the goal to the gripper.
+        # self.robotiq_client.send_goal(goal)
+
+        # store previous joint vels for moving avg
+        self.qdots = deque(maxlen=MOVING_AVERAGE)
+        for idx in range(MOVING_AVERAGE):
+            self.qdots.append(np.asarray([0.0] * 6))
+
+    def joint_states_cb(self, msg):
+        try:
+            if msg is not None:
+                states = list(msg.position)
+                states[2], states[0] = states[0], states[2]
+                self.joint_states = tuple(states) 
+        except:
+            pass
+    
+    def joint2pose(self, q=None):
+        if q is None:
+            q = self.joint_states
+        state = self.kdl_kin.forward(q)
+        pos = np.array(state[:3,3]).T
+        pos = pos.squeeze().tolist()
+        R = state[:,:3][:3]
+        euler = transmethods.euler_from_matrix(R)
+
+        return pos + list(euler)
+
+    def switch_controller(self, mode=None):
+        req = SwitchControllerRequest()
+        res = SwitchControllerResponse()
+
+        req.start_asap = False
+        req.timeout = 0.0
+        if mode == 'velocity':
+            req.start_controllers = ['joint_group_vel_controller']
+            req.stop_controllers = ['scaled_pos_joint_traj_controller']
+            req.strictness = req.STRICT
+        elif mode == 'position':
+            req.start_controllers = ['scaled_pos_joint_traj_controller']
+            req.stop_controllers = ['joint_group_vel_controller']
+            req.strictness = req.STRICT
+        else:
+            rospy.logwarn('Unkown mode for the controller!')
+
+        res = self.switch_controller_cli.call(req)
+
+    def xdot2qdot(self, xdot,q=None):
+        if q == None:
+            q= self.joint_states
+        pose = self.kdl_kin.forward(q)
+        pose[:3,3] += np.reshape(xdot,(3,1))
+        #print(pose) 
+        q2 = self.invkin(pose)
+        qdot = q2-q
+      
+        return qdot
+    
+    def xdot2qdot(self, xdot,q=None):
+        if q == None:
+            q= self.joint_states
+        
+        J = self.kdl_kin.jacobian(q)
+        J_inv = np.linalg.pinv(J)
+      
+        return J_inv.dot(xdot)
+  
+  
+
+    def send(self, xdot):
+        qdot = self.xdot2qdot(xdot)
+        self.qdots.append(qdot)
+        qdot_mean = np.mean(self.qdots, axis=0).tolist()[0]
+        cmd_vel = Float64MultiArray()
+        cmd_vel.data = qdot_mean
+        self.vel_pub.publish(cmd_vel)
+
+    def sendQ(self, qdot):
+        #qdot = self.xdot2qdot(xdot)
+        self.qdots.append(qdot)
+        qdot_mean = np.mean(self.qdots, axis=0).tolist()[0]
+        cmd_vel = Float64MultiArray()
+        cmd_vel.data = (qdot_mean)
+      
+        self.vel_pub.publish(cmd_vel)
+
+    def send_joint(self, pos, time):
+        waypoint = JointTrajectoryPoint()
+        waypoint.positions = pos
+        waypoint.time_from_start = rospy.Duration(time)
+        goal = FollowJointTrajectoryGoal()
+        goal.trajectory.joint_names = self.joint_names
+        goal.trajectory.points.append(waypoint)
+        goal.trajectory.header.stamp = rospy.Time.now()
+        self.client.send_goal(goal)
+        rospy.sleep(time)
+
+    def samplejoint(self):
+        q = self.kdl_kin.random_joint_angles()
+        return tuple(q)
+
+    def dirkin(self, q):
+        pose = np.asarray(self.kdl_kin.forward(q))
+        return pose
+
+    def jacobian(self, q):
+        return self.kdl_kin.jacobian(q)
+
+    def invkin(self, pose, q=None):
+        return self.kdl_kin.inverse(pose, q, maxiter=10000, eps=0.001)
+
+    def invkin_search(self, pose, timeout=1.):
+        return self.kdl_kin.inverse_search(pose, timeout)

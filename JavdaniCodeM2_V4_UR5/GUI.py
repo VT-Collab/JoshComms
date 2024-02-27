@@ -1,5 +1,5 @@
 #GUI USE
-from tkinter import *
+from Tkinter import *
 
 class GUI_Interface(object):
     def __init__(self):

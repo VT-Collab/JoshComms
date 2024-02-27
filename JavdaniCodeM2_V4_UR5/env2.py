@@ -22,8 +22,8 @@ class SimpleEnv():
         # set up camera
         self._set_camera()
         # load some scene objects
-        p.loadURDF(os.path.join(self.urdfRootPath, "plane.urdf"), basePosition=[0, 0, -0.65])
-        p.loadURDF(os.path.join(self.urdfRootPath, "table/table.urdf"), basePosition=[0.5, 0, -0.65])
+        p.loadURDF(os.path.join(self.urdfRootPath, "plane.urdf"), basePosition=[-.5, 0, -0.65])
+        p.loadURDF(os.path.join(self.urdfRootPath, "table/table.urdf"), basePosition=[-0.25, 0, -0.65])
 
         self.init_objects()
 
@@ -79,8 +79,8 @@ class SimpleEnv():
     def _set_camera(self):
         self.camera_width = 256
         self.camera_height = 256
-        p.resetDebugVisualizerCamera(cameraDistance=1.2, cameraYaw=30, cameraPitch=-60,
-                                     cameraTargetPosition=[0.5, -0.2, 0.0])
+        p.resetDebugVisualizerCamera(cameraDistance=1.2, cameraYaw=-30, cameraPitch=-60,
+                                     cameraTargetPosition=[-0.5, -0.2, 0.0])
         self.view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0.5, 0, 0],
                                                                distance=1.0,
                                                                yaw=90,
@@ -99,8 +99,8 @@ class SimpleEnv():
         #Salt Shaker
         self.salt = RBOObject("block")
         self.salt.load()
-        self.salt_position = [0.65, -0.15, 0.1]
-        self.salt_poslist = [[0.65, -0.15, 0.1]]
+        self.salt_position = [-0.28, 0.102, 0.25]
+        self.salt_poslist = [[-0.28, 0.102, 0.25]]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -114,8 +114,8 @@ class SimpleEnv():
         #Salt Shaker
         self.pepper = RBOObject("block")
         self.pepper.load()
-        self.pepper_position = [0.6, -0.15, 0.1]
-        self.pepper_poslist = [[0.6, -0.15, 0.1]]
+        self.pepper_position = [-0.78, -0.016, 0.25]
+        self.pepper_poslist = [[-0.78, -0.016, 0.25]]
         self.pepper_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -125,15 +125,29 @@ class SimpleEnv():
         self.pepper_name = ["Pepper"]
 
         self.pepper_details = {'obj':self.pepper,'grasp':self.pepper_grasp,'name': self.pepper_name,'positions':self.pepper_poslist,'quats':self.pepper_quatlist,'num':len(self.pepper_grasp)}
+
+        self.plate = RBOObject("plate")
+        self.plate.load()
+        self.plate_position = [-0.555, -0.265, 0.25]
+        self.plate_poslist = [[-0.555, -0.265, 0.25]]
+        self.plate_quaternion = [1.0  ,       0.    ,     0., 0.]
+        #assist pos / pose
         
+        self.plate_quatlist = [[1.0  ,       0.    ,     0., 0.]]
+        self.plate_grasp = [0]
+        self.plate.set_position_orientation(self.plate_position, self.plate_quaternion)
+        self.plate_name = ["plate"]
+
+        self.plate_details = {'obj':self.plate,'grasp':self.plate_grasp,'name': self.plate_name,'positions':self.plate_poslist,'quats':self.plate_quatlist,'num':len(self.plate_grasp)}
+
         #Task B
         #Load Fork + Spoon + knife + tray
 
-        #Fork
+        #Fork Spawn
         self.fork = RBOObject("block")
         self.fork.load()
-        self.fork_position = [0.45, -0.25, 0.1]
-        self.fork_poslist = [[0.45, -0.25, 0.1]]
+        self.fork_position = [-0.585, 0.22, 0.22]
+        self.fork_poslist = [[-0.585, 0.22, 0.22]]
         self.fork_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -144,11 +158,11 @@ class SimpleEnv():
 
         self.fork_details = {'obj':self.fork,'grasp':self.fork_grasp,'name': self.fork_name,'positions':self.fork_poslist,'quats':self.fork_quatlist,'num':len(self.fork_grasp)}
 
-        #Spoon
+        #Spoon Spawn
         self.spoon= RBOObject("block")
         self.spoon.load()
-        self.spoon_position = [0.4, -0.2, 0.1]
-        self.spoon_poslist = [[0.4, -0.2, 0.1]]
+        self.spoon_position = [-.6, 0.088, 0.22]
+        self.spoon_poslist = [[-0.6, -0.088, 0.22]]
         self.spoon_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -159,43 +173,73 @@ class SimpleEnv():
 
         self.spoon_details = {'obj':self.spoon,'grasp':self.spoon_grasp,'name': self.spoon_name,'positions':self.spoon_poslist,'quats':self.spoon_quatlist,'num':len(self.spoon_grasp)}
 
-        #Knife 
-        self.knife= RBOObject("block")
-        self.knife.load()
-        self.knife_position = [0.4, -0.3, 0.1]
-        self.knife_poslist = [[0.4, -0.3, 0.1]]
-        self.knife_quaternion = [1.0  ,       0.    ,     0., 0.]
+        #Fork Goal
+        self.fork2 = RBOObject("block")
+        self.fork2.load()
+        self.fork2_position = [-0.36, -0.265, 0.22]
+        self.fork2_poslist = [[-0.36, -0.265, 0.22]]
+        self.fork2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
-        self.knife_quatlist = [[1.0  ,       0.    ,     0., 0.]]
-        self.knife_grasp = [0]
-        self.knife.set_position_orientation(self.knife_position, self.knife_quaternion)
-        self.knife_name = ["Spoon"]
+        self.fork2_quatlist = [[1.0  ,       0.    ,     0., 0.]]
+        self.fork2_grasp = [0]
+        self.fork2.set_position_orientation(self.fork2_position, self.fork2_quaternion)
+        self.fork2_name = ["Fork2"]
 
-        self.knife_details = {'obj':self.knife,'grasp':self.knife_grasp,'name': self.knife_name,'positions':self.knife_poslist,'quats':self.knife_quatlist,'num':len(self.knife_grasp)}
+        self.fork2_details = {'obj':self.fork2,'grasp':self.fork2_grasp,'name': self.fork2_name,'positions':self.fork2_poslist,'quats':self.fork2_quatlist,'num':len(self.fork2_grasp)}
 
-        #Tray
-        self.tray= RBOObject("tray")
-        self.tray.load()
-        self.tray_position = [0.5, 0.3, 0.1]
-        self.tray_poslist = [[0.5, 0.3, 0.1]]
-        self.tray_quaternion = [1.0  ,       0.    ,     0., 0.]
+        #Spoon Goal
+        self.spoon2= RBOObject("block")
+        self.spoon2.load()
+        self.spoon2_position = [-0.75, -0.3, 0.22]
+        self.spoon2_poslist = [[-0.75, -0.3, 0.22]]
+        self.spoon2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
-        self.tray_quatlist = [[1.0  ,       0.    ,     0., 0.]]
-        self.tray_grasp = [0]
-        self.tray.set_position_orientation(self.tray_position, self.tray_quaternion)
-        self.tray_name = ["Tray"]
+        self.spoon2_quatlist = [[1.0  ,       0.    ,     0., 0.]]
+        self.spoon2_grasp = [0]
+        self.spoon2.set_position_orientation(self.spoon2_position, self.spoon2_quaternion)
+        self.spoon2_name = ["Spoon2"]
 
-        self.tray_details = {'obj':self.tray,'grasp':self.tray_grasp,'name': self.tray_name,'positions':self.tray_poslist,'quats':self.tray_quatlist,'num':len(self.tray_grasp)}
+        self.spoon2_details = {'obj':self.spoon2,'grasp':self.spoon2_grasp,'name': self.spoon2_name,'positions':self.spoon2_poslist,'quats':self.spoon2_quatlist,'num':len(self.spoon2_grasp)}
+
+        # #Knife 
+        # self.knife= RBOObject("block")
+        # self.knife.load()
+        # self.knife_position = [0.4, -0.3, 0.1]
+        # self.knife_poslist = [[0.4, -0.3, 0.1]]
+        # self.knife_quaternion = [1.0  ,       0.    ,     0., 0.]
+        # #assist pos / pose
+        
+        # self.knife_quatlist = [[1.0  ,       0.    ,     0., 0.]]
+        # self.knife_grasp = [0]
+        # self.knife.set_position_orientation(self.knife_position, self.knife_quaternion)
+        # self.knife_name = ["Spoon"]
+
+        # self.knife_details = {'obj':self.knife,'grasp':self.knife_grasp,'name': self.knife_name,'positions':self.knife_poslist,'quats':self.knife_quatlist,'num':len(self.knife_grasp)}
+
+        # #Tray
+        # self.tray= RBOObject("tray")
+        # self.tray.load()
+        # self.tray_position = [0.5, 0.3, 0.1]
+        # self.tray_poslist = [[0.5, 0.3, 0.1]]
+        # self.tray_quaternion = [1.0  ,       0.    ,     0., 0.]
+        # #assist pos / pose
+        
+        # self.tray_quatlist = [[1.0  ,       0.    ,     0., 0.]]
+        # self.tray_grasp = [0]
+        # self.tray.set_position_orientation(self.tray_position, self.tray_quaternion)
+        # self.tray_name = ["Tray"]
+
+        # self.tray_details = {'obj':self.tray,'grasp':self.tray_grasp,'name': self.tray_name,'positions':self.tray_poslist,'quats':self.tray_quatlist,'num':len(self.tray_grasp)}
        
        
         #Task C -----------------------------------------------
         # Cup 1
         self.cup1 = YCBObject("002_master_chef_can")
         self.cup1.load()
-        self.cup1_position = [0.7, 0.1, 0.1]
-        self.cup1_poslist = [[0.7, 0.1, 0.1]]
+        self.cup1_position = [-0.2875, -0.07, 0.3]
+        self.cup1_poslist = [[-0.2875, -0.07, 0.3]]
         self.cup1_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -209,8 +253,8 @@ class SimpleEnv():
         # load mug for pose correction task
         self.mug = YCBObject("025_mug")
         self.mug.load()
-        self.mug_position = [0.5, -.1, 0.1]
-        self.mug_poslist = [[0.5, -.1, 0.1]]
+        self.mug_position = [-0.671, -0.038, 0.3]
+        self.mug_poslist = [[-0.671, -0.038, 0.3]]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up

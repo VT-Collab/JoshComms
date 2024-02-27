@@ -4,7 +4,7 @@ import copy
 from Utils import *
 
 class AssistancePolicyOneTarget(object):
-  ACTION_APPLY_TIME = 0.2
+  ACTION_APPLY_TIME = 0.3
 
   def __init__(self, goal):
     self.goal_pose = goal.pose
@@ -16,7 +16,7 @@ class AssistancePolicyOneTarget(object):
     self.user_action = copy.deepcopy(user_action)
     #print("USER",user_action)
     #self.robot_state_after_action = self.state_after_user_action(robot_state, user_action)
-    self.rob_pos,self.ee_trans = joint2pose(self.robot_state["q"])
+    self.rob_pos = self.robot_state["x"]
     #self.rob_pos = self.ee_trans[0:3,3]
 
   def get_action(self):
@@ -34,18 +34,20 @@ class AssistancePolicyOneTarget(object):
 
   #def pose_after_user_action(self, ee_trans, user_action):
   def state_after_user_action(self, robot_state, user_action):
-    return robot_state.state_after_action(user_action, self.ACTION_APPLY_TIME)
+    return self.state_after_user_action(robot_state,user_action)
   
   def state_after_user_action(self,robot_state,qdot, limit=1.0):
-
+      
+      
       qdot = np.asarray(qdot)
       #print(qdot)
       scale = np.linalg.norm(qdot)
       if scale > limit:
-          qdot = np.asarray([qdot[i] * limit/scale for i in range(7)])
+          qdot = np.asarray([qdot[i] * limit/scale for i in range(len(qdot))])
       current_q = robot_state["q"]
-      qafter = current_q[0:7] + (qdot*self.ACTION_APPLY_TIME)
-      return qafter
+      qafter = current_q + (qdot*self.ACTION_APPLY_TIME)
+      
+      return qafter[0]
 
 
 #def UserInputToRobotAction(user_input):

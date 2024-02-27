@@ -11,20 +11,17 @@ class GoalPredictor(object):
     self.goals = goals
     self.count = 0
     self.log_goal_distribution = ((1./len(self.goals))*np.ones(len(self.goals))) #scalar
-    #print(np.log((1./len(self.goals))))
-    #print(np.ones(len(self.goals)))
+
     print( "STARTING --- [Can,Mug]",self.log_goal_distribution)
 
-  def update_distribution(self,  BaseQVal,values,user_action,robot_state,beta = .2):
+  def update_distribution(self,  BaseQVal,values,user_action,robot_state,beta = .02):
     #Here bring in z for qv
     self.count+=1
     
     self.log_goal_distribution *= np.exp(beta*(-BaseQVal))
-    #print( "[Cup,Mug,Block]",-BaseQVal+values,"---",np.exp(-BaseQVal+values))
+   
     self.normalize_log_distribution()
-    print(self.count,"--- [Can,Mug]",self.log_goal_distribution,"----",np.exp((beta*(-BaseQVal))))
-    
-    #self.clip_prob()
+
 
   def normalize_log_distribution(self):
     if min(self.log_goal_distribution) < .05:

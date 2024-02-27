@@ -30,6 +30,8 @@ class PrimaryPolicy:
     
     self.robot_state = robot_state
 
+    
+
 
   #uses diffent goal distribution
   def get_blend_action(self, goal_distribution = np.array([]), **kwargs):
