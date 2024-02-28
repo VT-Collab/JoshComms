@@ -14,7 +14,7 @@ class GoalPredictor(object):
 
     print( "STARTING --- [Can,Mug]",self.log_goal_distribution)
 
-  def update_distribution(self,  BaseQVal,values,user_action,robot_state,beta = .02):
+  def update_distribution(self,  BaseQVal,values,user_action,robot_state,beta = .1):
     #Here bring in z for qv
     self.count+=1
     
@@ -24,9 +24,9 @@ class GoalPredictor(object):
 
 
   def normalize_log_distribution(self):
-    if min(self.log_goal_distribution) < .05:
+    if min(self.log_goal_distribution) < .075:
       induse = np.where(self.log_goal_distribution == min(self.log_goal_distribution))[0][0]
-      self.log_goal_distribution[induse] = .05
+      self.log_goal_distribution[induse] = .075
     log_normalization_val = np.linalg.norm(self.log_goal_distribution)
     self.log_goal_distribution /= log_normalization_val
     

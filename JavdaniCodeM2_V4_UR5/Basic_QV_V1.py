@@ -79,14 +79,17 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		self.dist_translation_aftertrans = np.linalg.norm(np.array(self.position_after_action) - self.goal_pos)
 
 		vec2goal = self.get_action()
-		self.action_log_robot[self.action_count] = vec2goal / np.linalg.norm(vec2goal)
+		vecnorm = np.linalg.norm(vec2goal)
+		if vecnorm<.001:
+			vecnorm =1
+		self.action_log_robot[self.action_count] = vec2goal / vecnorm
 		#print("USE IN CHECKIN",self.action_log_robot)
 		
 		if np.linalg.norm(self.user_action) < .05:
 			#print("SLOW")
 			#print(np.linalg.norm(self.user_action))
 			vec2goal = self.get_action(goal_pos=max_goal_pos)
-			self.action_log_human[self.action_count] = vec2goal / np.linalg.norm(vec2goal)
+			self.action_log_human[self.action_count] = vec2goal / vecnorm
 		else:
 			self.action_log_human[self.action_count] = self.user_action / np.linalg.norm(self.user_action)
 			
@@ -114,7 +117,9 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		pose[:3,3] = (np.reshape(goal_pos,(3,1))+pose[:3,3])/2
 		#print(pose)
 		goal_q = self.invkin(pose,q)
-		qdot =  goal_q - q
+		qdot =  (goal_q - q) 
+		if np.linalg.norm(qdot) > .001:
+			qdot *= .1/(np.linalg.norm(qdot))
 		#print("SHAPIN UP",np.shape(xdot))
 		#robot_qdot= self.xdot2qdot(xdot, self.robot_state["q"]) #qdot
 	 # print("SHAPIN UP",np.shape(robot_qdot[0,0:6]))

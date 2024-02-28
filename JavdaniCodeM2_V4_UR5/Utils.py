@@ -3,7 +3,7 @@ import numpy as np
 #import cv2
 import time 
 import pickle
-import socket
+
 import sys
 from scipy.interpolate import interp1d
 import pygame
@@ -129,32 +129,6 @@ def xdot2qdot(xdot,robot_state, J):
           J =getJ(robot_state)
         J_inv = np.linalg.pinv(J)
         return J_inv.dot(xdot)
-
-def connect2comms(PORT):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('127.0.0.1', PORT))
-    #s.connect(('192.168.1.3', PORT_comms)) #White Box
-    #s.bind(('192.168.1.57', PORT))
-    s.listen()
-    conn, addr = s.accept()
-    return conn
-
-def send2comms(conn, q):
-
-    msg = np.array2string(q, precision=5, separator=',',suppress_small=True)[1:-1]
-    send_msg = "s," + msg + ","
-    #send_msg = "s," + send_msg + ","
-    conn.send(send_msg.encode())
-
-def listen2comms(conn):
-    state_length = 7 + 7 + 7 + 6 + 42
-    message = str(conn.recv(2048))[2:-2]
-    state_str = list(message.split(","))
-
-    if message is not None:
-        return state_str   
-    return None
 
 def wrap_angles(theta):
   if theta < -np.pi:
@@ -482,7 +456,7 @@ class TrajectoryClient(object):
             q= self.joint_states
         pose = self.kdl_kin.forward(q)
         pose[:3,3] += np.reshape(xdot,(3,1))
-        #print(pose) 
+
         q2 = self.invkin(pose)
         qdot = q2-q
       

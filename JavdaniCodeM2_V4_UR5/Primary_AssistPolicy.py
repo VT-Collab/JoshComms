@@ -17,6 +17,8 @@ class PrimaryPolicy:
     self.goals = goals
     self.assist_policy = SecondaryPolicy(goals)
     self.goal_predictor = GoalPredictor.GoalPredictor(goals)
+    self.inner_condifdence_step = .02
+    self.alpha = 0
     
 
   def update(self, robot_state, user_action):
@@ -29,18 +31,35 @@ class PrimaryPolicy:
     self.goal_predictor.update_distribution(BaseQValues,values,user_action,robot_state)
     
     self.robot_state = robot_state
+    
 
     
 
 
   #uses diffent goal distribution
   def get_blend_action(self, goal_distribution = np.array([]), **kwargs):
-    
-    if goal_distribution.size == 0:
-      goal_distribution = self.goal_predictor.get_distribution()
-    max_prob_goal_ind = np.argmax(goal_distribution)
+    if self.blend_confidence_function_prob_diff(goal_distribution, prob_diff_required=0.8):
+      if self.alpha + self.inner_condifdence_step < 1:
+        add_alpha = 0
+        max_prob_goal_ind = np.argmax(goal_distribution)
+        max_policy = self.assist_policy.goal_assist_policies[max_prob_goal_ind]
+        max_QVpolicy = max_policy.target_assist_policies[0]
+        #print(max_policy.target_assist_policies)
+        max_assistConstant = max_QVpolicy.action_confirmation_constant
+        if max_assistConstant < 1:
+          add_alpha += (.25*(1-max_assistConstant))
+        add_alpha += (.25*goal_distribution[max_prob_goal_ind])
+        if np.linalg.norm(self.user_action) < .05:
+          add_alpha += .25
+        self.alpha += add_alpha*(self.inner_condifdence_step)
+        #print("addition",add_alpha*(self.inner_condifdence_step))
+        #print("Alpha,",self.alpha)
 
-    assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution, **kwargs)
+    else:
+      self.alpha = .1
+    
+
+    assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution, alpha = self.alpha,**kwargs)
     #print("YIPPEE")
     return assisted_qdot
 
@@ -65,21 +84,6 @@ class PrimaryPolicy:
   #     return self.assist_policy.user_action
     
 
-
-  def get_blend_action_confident(self, goal_distribution = np.array([]), **kwargs):
-    
-    if goal_distribution.size == 0:
-      goal_distribution = self.goal_predictor.get_distribution()
-    
-    max_prob_goal_ind = np.argmax(goal_distribution)
-
-    goal_distribution_all_max = np.zeros(len(goal_distribution))
-    goal_distribution_all_max[max_prob_goal_ind] = 1.0
-    
-    #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
-    assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs)
-    
-    return assisted_qdot
 
   def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.2):
     if len(goal_distribution) <= 1:

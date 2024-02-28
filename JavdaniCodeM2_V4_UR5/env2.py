@@ -114,8 +114,8 @@ class SimpleEnv():
         #Salt Shaker
         self.pepper = RBOObject("block")
         self.pepper.load()
-        self.pepper_position = [-0.78, -0.016, 0.25]
-        self.pepper_poslist = [[-0.78, -0.016, 0.25]]
+        self.pepper_position = [-0.78, -0.016, 0.3]
+        self.pepper_poslist = [[-0.78, -0.016, 0.3]]
         self.pepper_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -128,8 +128,8 @@ class SimpleEnv():
 
         self.plate = RBOObject("plate")
         self.plate.load()
-        self.plate_position = [-0.555, -0.265, 0.25]
-        self.plate_poslist = [[-0.555, -0.265, 0.25]]
+        self.plate_position = [-0.555, -0.265, 0.3]
+        self.plate_poslist = [[-0.555, -0.265, 0.3]]
         self.plate_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -146,8 +146,8 @@ class SimpleEnv():
         #Fork Spawn
         self.fork = RBOObject("block")
         self.fork.load()
-        self.fork_position = [-0.585, 0.22, 0.22]
-        self.fork_poslist = [[-0.585, 0.22, 0.22]]
+        self.fork_position = [-0.585, 0.22, 0.3]
+        self.fork_poslist = [[-0.585, 0.22, 0.3]]
         self.fork_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -161,8 +161,8 @@ class SimpleEnv():
         #Spoon Spawn
         self.spoon= RBOObject("block")
         self.spoon.load()
-        self.spoon_position = [-.6, 0.088, 0.22]
-        self.spoon_poslist = [[-0.6, -0.088, 0.22]]
+        self.spoon_position = [-.6, 0.088, 0.3]
+        self.spoon_poslist = [[-0.6, -0.088, 0.3]]
         self.spoon_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -176,8 +176,8 @@ class SimpleEnv():
         #Fork Goal
         self.fork2 = RBOObject("block")
         self.fork2.load()
-        self.fork2_position = [-0.36, -0.265, 0.22]
-        self.fork2_poslist = [[-0.36, -0.265, 0.22]]
+        self.fork2_position = [-0.36, -0.265, 0.3]
+        self.fork2_poslist = [[-0.36, -0.265, 0.3]]
         self.fork2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -191,8 +191,8 @@ class SimpleEnv():
         #Spoon Goal
         self.spoon2= RBOObject("block")
         self.spoon2.load()
-        self.spoon2_position = [-0.75, -0.3, 0.22]
-        self.spoon2_poslist = [[-0.75, -0.3, 0.22]]
+        self.spoon2_position = [-0.75, -0.3, 0.3]
+        self.spoon2_poslist = [[-0.75, -0.3, 0.3]]
         self.spoon2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
