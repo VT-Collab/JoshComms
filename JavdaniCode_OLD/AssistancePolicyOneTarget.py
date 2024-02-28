@@ -15,8 +15,8 @@ class AssistancePolicyOneTarget(object):
     self.robot_state = copy.deepcopy(robot_state)
     self.user_action = copy.deepcopy(user_action)
     #print("USER",user_action)
-    self.robot_state_after_action = self.state_after_user_action(robot_state, user_action)
-    self.rob_pos,self.ee_trans = joint2pose(self.robot_state["q"])
+    #self.robot_state_after_action = self.state_after_user_action(robot_state, user_action)
+    self.rob_pos = self.robot_state["x"]
     #self.rob_pos = self.ee_trans[0:3,3]
 
   def get_action(self):

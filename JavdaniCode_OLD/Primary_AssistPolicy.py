@@ -27,7 +27,7 @@ class AdaAssistancePolicy:
     #print("values",np.size(values),"val",values)
     #print("Q_val",np.size(q_values),"val",q_values)
   
-    self.goal_predictor.update_distribution(values, q_values,user_action,robot_state)
+    self.goal_predictor.update_distribution(values, q_values)
     self.robot_state = robot_state
 
   # def goal_update(self, robot_state, user_action,panda):
@@ -50,7 +50,7 @@ class AdaAssistancePolicy:
     
     if goal_distribution.size == 0:
       goal_distribution = self.goal_predictor.get_distribution()
-    #print(goal_distribution)
+  
     max_prob_goal_ind = np.argmax(goal_distribution)
     
     #check if we meet the confidence criteria which dictates whether or not assistance is provided
@@ -64,28 +64,15 @@ class AdaAssistancePolicy:
       
       #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
       assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs)
-      #print("Q",assisted_qdot)
+   
       return assisted_qdot
     else:
       #if we don't meet confidence function, use direct teleop
       return self.assist_policy.user_action
 
-  def get_blend_action_confident(self, goal_distribution = np.array([]), **kwargs):
-    
-    if goal_distribution.size == 0:
-      goal_distribution = self.goal_predictor.get_distribution()
-    #print(goal_distribution)
-    max_prob_goal_ind = np.argmax(goal_distribution)
 
-    goal_distribution_all_max = np.zeros(len(goal_distribution))
-    goal_distribution_all_max[max_prob_goal_ind] = 1.0
-    
-    #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
-    assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs)
-    #print("Q",assisted_qdot)
-    return assisted_qdot
 
-  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.2):
+  def blend_confidence_function_prob_diff(self,goal_distribution, prob_diff_required=0.4):
     if len(goal_distribution) <= 1:
       print("FAILURE")
       return True

@@ -12,12 +12,11 @@ class GoalPredictor(object):
     self.log_goal_distribution = np.log((1./len(self.goals))*np.ones(len(self.goals))) #scalar
 
 
-  def update_distribution(self, values, q_values,user_action,robot_state):
+  def update_distribution(self, values, q_values):
     sorted = np.sort(self.get_distribution())
-    if sorted[-1] - sorted[-2] > .3:
-      self.log_goal_distribution +=  (values- q_values)*.8
-    else:
-      self.log_goal_distribution +=  (values- q_values)*.6
+
+    self.log_goal_distribution -= (q_values - values)
+
     self.normalize_log_distribution()
     #self.clip_prob()
 

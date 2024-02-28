@@ -391,7 +391,7 @@ class AdaHandler:
 			for goal_policy in self.robot_policy.assist_policy.goal_assist_policies:
 				for target_policy in goal_policy.target_assist_policies:
 					target_policy.set_constants(huber_translation_linear_multiplier=1.55, huber_translation_delta_switch=0.11, huber_translation_constant_add=0.2, huber_rotation_linear_multiplier=0.20, huber_rotation_delta_switch=np.pi/72., huber_rotation_constant_add=0.3, huber_rotation_multiplier=0.20, robot_translation_cost_multiplier=14.0, robot_rotation_cost_multiplier=0.05)
-					target_policy.set_observation(algo_enabled)
+
 
 		start_time = time.time()
 		sim_time = 0.0
@@ -631,7 +631,7 @@ class AdaHandler:
 			# 	break
 			#if action
 			#action *= 2*np.linalg.norm(direct_teleop_action)/np.linalg.norm(action)
-			mover.sendQ((direct_teleop_action))
+			mover.sendQ((action))
 			#time.sleep(.05)
 			#mover.client.wait_for_result()
 			#print("CYCLED")
