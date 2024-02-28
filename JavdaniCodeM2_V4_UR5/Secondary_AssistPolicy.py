@@ -24,9 +24,22 @@ class SecondaryPolicy:
 		self.user_action = user_action
 		self.max_ind = np.where(goal_distrib == np.max(goal_distrib))[0]
 		self.max_goal = self.goals[self.max_ind[0]]
-		#max_goal_pos = self.max_goal.pos
+		self.Robot_action = np.zeros(6)
 		for goal_policy in self.goal_assist_policies:
-			goal_policy.update(robot_state, self.user_action,self.max_goal.pos,goal_distrib)
+			goal_policy.update(robot_state, self.user_action,self.max_goal.pos,goal_distrib,self.Robot_action)
+
+		dist2goal = np.linalg.norm(np.array(self.robot_state["x"][0:2]) - np.array(self.max_goal.pos[0:2]))
+		if dist2goal > .05:			
+			Robot_action = self.goal_assist_policies[self.max_ind[0]].get_action()/2
+			self.Robot_action = np.reshape(Robot_action,(1,6))
+		else:
+			height_diff = self.robot_state["x"][2] - self.max_goal.pos[2]
+			if height_diff > .1:				
+				Robot_action = self.goal_assist_policies[self.max_ind[0]].get_action()/2
+				self.Robot_action = np.reshape(Robot_action,(1,6))
+			else:
+				self.Robot_action = np.zeros([1,6])
+		#max_goal_pos = self.max_goal.pos
 
 
 	def get_values(self):
@@ -58,11 +71,7 @@ class SecondaryPolicy:
 		## Robot_action /= len(goal_distribution)
 		#max_prob_goal_ind = np.argmax(goal_distribution)
 		#print("HEre",self.max_goal.pos)
-		if np.linalg.norm(np.array(self.robot_state["x"][0:3]) - np.array(self.max_goal.pos)) > .05:
-			Robot_action = self.goal_assist_policies[self.max_ind[0]].get_action()
-			Robot_action = np.reshape(Robot_action,(1,6))
-		else:
-			Robot_action = np.zeros([1,6])
+		Robot_action = self.Robot_action
 	
 		# if np.linalg.norm(self.user_action) < .05:
 		# 	UserAdjusted= Robot_action

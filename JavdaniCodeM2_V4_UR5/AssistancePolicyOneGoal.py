@@ -21,12 +21,12 @@ class AssistancePolicyOneGoal:
       
     self.min_val_ind = 0
 
-  def update(self, robot_state, user_action,max_goal_pos=None,goal_distrib=[]):
+  def update(self, robot_state, user_action,max_goal_pos=None,goal_distrib=[],Robot_action = np.zeros(6)):
     self.last_robot_state = robot_state
     self.last_user_action = user_action
 
     for target_policy in self.target_assist_policies:
-      target_policy.update(robot_state, user_action,max_goal_pos,goal_distrib)
+      target_policy.update(robot_state, user_action,max_goal_pos,goal_distrib,Robot_action)
 
     values = [targ_policy.get_value() for targ_policy in self.target_assist_policies]
     self.min_val_ind = np.argmin(values)

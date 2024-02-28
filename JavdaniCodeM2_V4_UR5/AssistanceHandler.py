@@ -689,8 +689,8 @@ class AdaHandler:
 			# 	break
 			#if action
 			#action *= 2*np.linalg.norm(direct_teleop_action)/np.linalg.norm(action)
-			mover.sendQ((direct_teleop_action))
+			mover.sendQ((action))
 			#time.sleep(.05)
-			#mover.client.wait_for_result()
+			mover.client.wait_for_result()
 			#print("CYCLED")
 			

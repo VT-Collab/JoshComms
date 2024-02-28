@@ -56,7 +56,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 				return self.kdl_kin.inverse(pose, q, maxiter=10000, eps=0.01)
 	
 	
-	def update(self, robot_state, user_action,max_goal_pos = None,goal_distrib = []):
+	def update(self, robot_state, user_action,max_goal_pos = None,goal_distrib = [],Robot_action = np.zeros(6)):
 		
 		super(HuberAssistancePolicy, self).update(robot_state, user_action)
 		
@@ -88,7 +88,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		if np.linalg.norm(self.user_action) < .05:
 			#print("SLOW")
 			#print(np.linalg.norm(self.user_action))
-			vec2goal = self.get_action(goal_pos=max_goal_pos)
+			vec2goal = Robot_action
 			self.action_log_human[self.action_count] = vec2goal / vecnorm
 		else:
 			self.action_log_human[self.action_count] = self.user_action / np.linalg.norm(self.user_action)

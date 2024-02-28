@@ -26,6 +26,18 @@ from controller_manager_msgs.srv import (
     SwitchControllerResponse
 )
 
+
+# from robotiq_2f_gripper_msgs.msg import (
+#     CommandRobotiqGripperFeedback, 
+#     CommandRobotiqGripperResult, 
+#     CommandRobotiqGripperAction, 
+#     CommandRobotiqGripperGoal
+# )
+
+# from robotiq_2f_gripper_control.robotiq_2f_gripper_driver import (
+#     Robotiq2FingerGripperDriver as Robotiq
+# )
+
 from control_msgs.msg import (
     FollowJointTrajectoryAction,
     FollowJointTrajectoryGoal,
@@ -517,3 +529,6 @@ class TrajectoryClient(object):
 
     def invkin_search(self, pose, timeout=1.):
         return self.kdl_kin.inverse_search(pose, timeout)
+    # def actuate_gripper(self, pos, speed, force):
+    #     Robotiq.goto(self.robotiq_client, pos=pos, speed=speed, force=force, block=True)
+    #     return self.robotiq_client.get_result()

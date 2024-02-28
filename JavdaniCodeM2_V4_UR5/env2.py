@@ -99,8 +99,8 @@ class SimpleEnv():
         #Salt Shaker
         self.salt = RBOObject("block")
         self.salt.load()
-        self.salt_position = [-0.28, 0.102, 0.25]
-        self.salt_poslist = [[-0.28, 0.102, 0.25]]
+        self.salt_position = [-0.38, 0.105, 0.25]
+        self.salt_poslist = [[-0.38, 0.105, 0.25]]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -146,8 +146,8 @@ class SimpleEnv():
         #Fork Spawn
         self.fork = RBOObject("block")
         self.fork.load()
-        self.fork_position = [-0.585, 0.22, 0.3]
-        self.fork_poslist = [[-0.585, 0.22, 0.3]]
+        self.fork_position = [-0.59, 0.22, 0.3]
+        self.fork_poslist = [[-0.59, 0.22, 0.3]]
         self.fork_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -162,7 +162,7 @@ class SimpleEnv():
         self.spoon= RBOObject("block")
         self.spoon.load()
         self.spoon_position = [-.6, 0.088, 0.3]
-        self.spoon_poslist = [[-0.6, -0.088, 0.3]]
+        self.spoon_poslist = [[-0.6, 0.088, 0.3]]
         self.spoon_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -191,8 +191,8 @@ class SimpleEnv():
         #Spoon Goal
         self.spoon2= RBOObject("block")
         self.spoon2.load()
-        self.spoon2_position = [-0.75, -0.3, 0.3]
-        self.spoon2_poslist = [[-0.75, -0.3, 0.3]]
+        self.spoon2_position = [-0.755, -0.3, 0.3]
+        self.spoon2_poslist = [[-0.755, -0.3, 0.3]]
         self.spoon2_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -238,8 +238,8 @@ class SimpleEnv():
         # Cup 1
         self.cup1 = YCBObject("002_master_chef_can")
         self.cup1.load()
-        self.cup1_position = [-0.2875, -0.07, 0.3]
-        self.cup1_poslist = [[-0.2875, -0.07, 0.3]]
+        self.cup1_position = [-0.285, -0.065, 0.3]
+        self.cup1_poslist = [[-0.285, -0.065, 0.3]]
         self.cup1_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -253,8 +253,8 @@ class SimpleEnv():
         # load mug for pose correction task
         self.mug = YCBObject("025_mug")
         self.mug.load()
-        self.mug_position = [-0.671, -0.038, 0.3]
-        self.mug_poslist = [[-0.671, -0.038, 0.3]]
+        self.mug_position = [-0.68, -0.08, 0.3]
+        self.mug_poslist = [[-0.68, -0.08, 0.3]]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
