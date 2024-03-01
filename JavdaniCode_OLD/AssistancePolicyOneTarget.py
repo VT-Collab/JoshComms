@@ -4,7 +4,7 @@ import copy
 from Utils import *
 
 class AssistancePolicyOneTarget(object):
-  ACTION_APPLY_TIME = 0.1
+  ACTION_APPLY_TIME = 5
 
   def __init__(self, goal):
     self.goal_pose = goal.pose

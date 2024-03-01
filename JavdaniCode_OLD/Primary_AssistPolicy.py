@@ -20,12 +20,11 @@ class AdaAssistancePolicy:
     
 
   def update(self, robot_state, user_action):
-    #print(self.goals[0].grasp)
+    
     self.assist_policy.update(robot_state, user_action)
     self.user_action = user_action
     values,q_values = self.assist_policy.get_values()
-    #print("values",np.size(values),"val",values)
-    #print("Q_val",np.size(q_values),"val",q_values)
+   
   
     self.goal_predictor.update_distribution(values, q_values)
     self.robot_state = robot_state
@@ -63,7 +62,7 @@ class AdaAssistancePolicy:
       #time.sleep(4)
       
       #assisted_action = Action(twist=self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs), switch_mode_to=self.assist_policy.user_action.switch_mode_to)
-      assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution_all_max, **kwargs)
+      assisted_qdot = self.assist_policy.get_assisted_action(goal_distribution, **kwargs)
    
       return assisted_qdot
     else:
@@ -78,25 +77,10 @@ class AdaAssistancePolicy:
       return True
 
     goal_distribution_sorted = np.sort(goal_distribution)
-    #print(goal_distribution_sorted[-1] - goal_distribution_sorted[-2] > prob_diff_required)
+    
 
     return goal_distribution_sorted[-1] - goal_distribution_sorted[-2] > prob_diff_required
 
-  # manip_pos = robot_state.get_pos()
-  # goal_poses = goal.target_poses
-  # goal_pose_distances = [np.linalg.norm(manip_pos - pose[0:3,3]) for pose in goal_poses]
-  # dist_to_nearest_goal = np.min(goal_pose_distances)
-  # return dist_to_nearest_goal < distance_thresh
-
-# def blend_confidence_function_euclidean_distance(robot_state, goals , distance_thresh=0.10):
-#   manip_pos = (robot_state["x"])[0:2]
-#   goal_pose_distances =[]
-#   for goal in goals:
-#     #goal_pos = goal.pos
-#     goal_pose_distances = np.append(goal_pose_distances,[np.linalg.norm(manip_pos - goal.pos)])
-#   print(goal_)
-#   dist_to_nearest_goal = np.min(goal_pose_distances)
-#   return dist_to_nearest_goal < distance_thresh
 
 def goal_from_object(env,object):
   #pose = object.GetTransform()

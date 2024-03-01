@@ -6,11 +6,11 @@ from Primary_AssistPolicy import goal_from_object
 from Goal import Goal
 from Utils import *
 #Choice of Model Env
-from env2 import SimpleEnv
+from env3 import SimpleEnv
 #Outer tools
 from tf import *
 from functools import partial
-#import adapy
+  #import adapy
 
 #import prpy
 

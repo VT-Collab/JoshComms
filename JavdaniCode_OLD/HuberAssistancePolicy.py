@@ -26,7 +26,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		self.kdl_kin.joint_limits_upper = self.joint_limits_upper
 		self.kdl_kin.joint_safety_lower = self.joint_limits_lower
 		self.kdl_kin.joint_safety_upper = self.joint_limits_upper
-	
+		self.user_norm = .03
 		self.goal = goal
 		self.goal_pos = self.goal.pos
 		self.goal_quat = self.goal.quat
@@ -53,7 +53,10 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 	def update(self, robot_state, user_action):
 		super(HuberAssistancePolicy, self).update(robot_state, user_action)
 		z = user_action
-		
+		if np.linalg.norm(user_action) < .0005:
+			self.user_norm = .03
+		else:
+			self.user_norm = np.linalg.norm(user_action)
 		self.robot_state_after_action = self.state_after_user_action(robot_state, z)
 		#self.robot_state_after_action2 = self.state_after_user_action(robot_state, self.get_action())
 		use = time.time()
@@ -61,12 +64,10 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 
 		self.dist_translation = np.linalg.norm(np.array(self.robot_state["x"][0:3]) - self.goal_pos)
 		self.dist_translation_aftertrans = np.linalg.norm(np.array(self.position_after_action) - self.goal_pos)
-
+		
 		#self.quat_curr = transmethods.quaternion_from_matrix(self.robot_pose)
 		#self.quat_after_trans = transmethods.quaternion_from_matrix(self.pose_after_action)
 
-		#print("QUAT AND ROT",self.quat_curr)
-		#print("Goal and bowl",self.goal_quat)
 		# self.dist_rotation = QuaternionDistance(self.quat_curr, self.goal_quat)
 		
 		# self.dist_rotation_aftertrans = QuaternionDistance(self.quat_after_trans, self.goal_quat)
@@ -77,19 +78,20 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		if goal_pos == None:
 			goal_pos = self.goal_pos
 		q = self.robot_state["q"]
+		
 		#goal_euler= np.array(transmethods.euler_from_quaternion(self.goal_quat))
 		#goal_x = np.append(self.goal_pos,[0,0,0])
 		pose = self.kdl_kin.forward(q)
-		#print(pose)
+
 		pose[:3,3] = (np.reshape(goal_pos,(3,1))+pose[:3,3])/2
-		#print(pose)
+
 		goal_q = self.invkin(pose,q)
 		qdot =  (goal_q - q) 
 		if np.linalg.norm(qdot) > .001:
-			qdot *= .1/(np.linalg.norm(qdot))
-		#print("SHAPIN UP",np.shape(xdot))
+			qdot *= self.user_norm/(np.linalg.norm(qdot))
+	
 		#robot_qdot= self.xdot2qdot(xdot, self.robot_state["q"]) #qdot
-	 # print("SHAPIN UP",np.shape(robot_qdot[0,0:6]))
+
 		 #= .001*(robotq[:7] - current_q[:7])
 		return qdot
 
@@ -98,21 +100,11 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 #     return self.get_cost_translation() + self.get_cost_rotation()
 
 	def get_value(self):
-		# a = self.get_value_translation()
-		# print("Val-Trans: ",a)
-		# b = self.get_value_rotation()
-		# print("Val_Rot: ",b)
-		# print("VAL TOTAL",a+b)
-		# return a + b
+
 		return (self.get_value_translation() )*self.V_Change_Constant
 
 	def get_qvalue(self):
-		# a = self.get_qvalue_translation()
-		# print("QVal-Trans: ",a)
-		# b = self.get_qvalue_rotation()
-		# print("QVal_Rot: ",b)
-		# print("QVAL TOTAL",a+b)
-		# return a + b
+
 		return (self.get_qvalue_translation() )*self.Q_Change_Constant
 
 

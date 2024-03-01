@@ -39,13 +39,13 @@ class AssistancePolicy:
 
   def get_probs_last_user_action(self):
     values,qvalues = self.get_values()
-    #print np.exp(-(qvalues-values))
+   
     return np.exp(-(qvalues-values))
 
 
 
 
-  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=False):
+  def get_assisted_action(self, goal_distribution, fix_magnitude_user_command=False,alpha=.4):
     assert goal_distribution.size == len(self.goal_assist_policies)
 
     action_dimension = 6
@@ -58,8 +58,14 @@ class AssistancePolicy:
     #user action is 1x7 joint space
 
 
-    UserAdjusted = self.user_action
-    to_ret_twist = total_action_twist + UserAdjusted
+    
+    if np.linalg.norm(self.user_action)>.0005:
+      UserAdjusted = self.user_action
+      
+    else:
+      UserAdjusted = .5*total_action_twist + self.user_action
+      
+    to_ret_twist = 4*(total_action_twist*(alpha) + UserAdjusted*(1-alpha))
 
     if fix_magnitude_user_command:
       to_ret_twist*= np.linalg.norm(self.user_action)/np.linalg.norm(to_ret_twist)

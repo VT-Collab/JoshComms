@@ -15,7 +15,7 @@ class AssistancePolicyOneGoal:
     self.target_assist_policies = []
     for pose in self.goal.target_poses:
       #a = self.goal.pos
-      #print(np.shape(a))
+     
       self.target_assist_policies.append(TargetPolicyClass(goal))
       
     self.min_val_ind = 0

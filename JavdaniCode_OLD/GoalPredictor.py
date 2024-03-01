@@ -5,7 +5,7 @@ import scipy.misc
 logsumexp = scipy.special.logsumexp
 
 class GoalPredictor(object):
-  max_prob_any_goal = 0.99
+  max_prob_any_goal = 0.95
   log_max_prob_any_goal = np.log(max_prob_any_goal)
   def __init__(self, goals):
     self.goals = goals
@@ -14,8 +14,8 @@ class GoalPredictor(object):
 
   def update_distribution(self, values, q_values):
     sorted = np.sort(self.get_distribution())
-
-    self.log_goal_distribution -= (q_values - values)
+    #print(q_values,values)
+    self.log_goal_distribution -= (q_values - values)*.25
 
     self.normalize_log_distribution()
     #self.clip_prob()
