@@ -27,16 +27,16 @@ from controller_manager_msgs.srv import (
 )
 
 
-# from robotiq_2f_gripper_msgs.msg import (
-#     CommandRobotiqGripperFeedback, 
-#     CommandRobotiqGripperResult, 
-#     CommandRobotiqGripperAction, 
-#     CommandRobotiqGripperGoal
-# )
+from robotiq_2f_gripper_msgs.msg import (
+    CommandRobotiqGripperFeedback, 
+    CommandRobotiqGripperResult, 
+    CommandRobotiqGripperAction, 
+    CommandRobotiqGripperGoal
+)
 
-# from robotiq_2f_gripper_control.robotiq_2f_gripper_driver import (
-#     Robotiq2FingerGripperDriver as Robotiq
-# )
+from robotiq_2f_gripper_control.robotiq_2f_gripper_driver import (
+    Robotiq2FingerGripperDriver as Robotiq
+)
 
 from control_msgs.msg import (
     FollowJointTrajectoryAction,
@@ -183,12 +183,15 @@ class Joystick(object):
         for idx in range(len(z)):
             if abs(z[idx]) < DEADBAND:
                 z[idx] = 0.0
-        stop = self.gamepad.get_button(7)
+        stop = self.gamepad.get_button(6)
+        #print(z)
+        #stop = False
+        start = self.gamepad.get_button(7)
         self.A_pressed = self.gamepad.get_button(0)
         self.B_pressed = self.gamepad.get_button(1)
         self.X_pressed = self.gamepad.get_button(2)
         self.Y_pressed = self.gamepad.get_button(3)
-        return z, (self.A_pressed,self.B_pressed,self.X_pressed,self.Y_pressed), stop
+        return z, (self.A_pressed,self.B_pressed,self.X_pressed,self.Y_pressed), start, stop
 
     def getAction(self, z, jaw = [0,0,0]):
         self.action = (STEP_SIZE_L * -z[1], STEP_SIZE_L * -z[0], STEP_SIZE_L * -z[2], 0, 0, 0)
@@ -380,7 +383,7 @@ class TrajectoryClient(object):
         self.client.wait_for_server()
         # Velocity commands publisher
         self.vel_pub = rospy.Publisher('/joint_group_vel_controller/command',\
-                 Float64MultiArray, queue_size=10)
+                 Float64MultiArray, queue_size=3)
         # Subscribers to update joint state
         self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_states_cb)
         # service call to switch controllers
@@ -404,20 +407,20 @@ class TrajectoryClient(object):
         self.kdl_kin.joint_limits_upper = self.joint_limits_upper
         self.kdl_kin.joint_safety_lower = self.joint_limits_lower
         self.kdl_kin.joint_safety_upper = self.joint_limits_upper
-        # # Gripper action and client
-        # action_name = rospy.get_param('~action_name', 'command_robotiq_action')
-        # self.robotiq_client = actionlib.SimpleActionClient(action_name, \
-        #                         CommandRobotiqGripperAction)
-        # self.robotiq_client.wait_for_server()
-        # # Initialize gripper
-        # goal = CommandRobotiqGripperGoal()
-        # goal.emergency_release = False
-        # goal.stop = False
-        # goal.position = 1.00
-        # goal.speed = 0.1
-        # goal.force = 5.0
-        # # Sends the goal to the gripper.
-        # self.robotiq_client.send_goal(goal)
+        # Gripper action and client
+        action_name = rospy.get_param('~action_name', 'command_robotiq_action')
+        self.robotiq_client = actionlib.SimpleActionClient(action_name, \
+                                CommandRobotiqGripperAction)
+        self.robotiq_client.wait_for_server()
+        # Initialize gripper
+        goal = CommandRobotiqGripperGoal()
+        goal.emergency_release = False
+        goal.stop = False
+        goal.position = 1.00
+        goal.speed = 0.1
+        goal.force = 5.0
+        # Sends the goal to the gripper.
+        self.robotiq_client.send_goal(goal)
 
         # store previous joint vels for moving avg
         self.qdots = deque(maxlen=MOVING_AVERAGE)
@@ -529,6 +532,7 @@ class TrajectoryClient(object):
 
     def invkin_search(self, pose, timeout=1.):
         return self.kdl_kin.inverse_search(pose, timeout)
-    # def actuate_gripper(self, pos, speed, force):
-    #     Robotiq.goto(self.robotiq_client, pos=pos, speed=speed, force=force, block=True)
-    #     return self.robotiq_client.get_result()
+    
+    def actuate_gripper(self, pos, speed, force):
+        Robotiq.goto(self.robotiq_client, pos=pos, speed=speed, force=force, block=True)
+        return self.robotiq_client.get_result()

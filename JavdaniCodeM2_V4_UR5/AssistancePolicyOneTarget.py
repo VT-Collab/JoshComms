@@ -4,7 +4,7 @@ import copy
 from Utils import *
 
 class AssistancePolicyOneTarget(object):
-  ACTION_APPLY_TIME = 0.3
+  ACTION_APPLY_TIME = 1
 
   def __init__(self, goal):
     self.goal_pose = goal.pose
@@ -32,18 +32,16 @@ class AssistancePolicyOneTarget(object):
     return pos_diff
 
 
-  #def pose_after_user_action(self, ee_trans, user_action):
-  def state_after_user_action(self, robot_state, user_action):
-    return self.state_after_user_action(robot_state,user_action)
+
   
   def state_after_user_action(self,robot_state,qdot, limit=1.0):
       
       
       qdot = np.asarray(qdot)
       #print(qdot)
-      scale = np.linalg.norm(qdot)
-      if scale > limit:
-          qdot = np.asarray([qdot[i] * limit/scale for i in range(len(qdot))])
+      # scale = np.linalg.norm(qdot)
+      # if scale > limit:
+      #     qdot = np.asarray([qdot[i] * limit/scale for i in range(len(qdot))])
       current_q = robot_state["q"]
       qafter = current_q + (qdot*self.ACTION_APPLY_TIME)
       

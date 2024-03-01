@@ -35,11 +35,14 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		self.goal_quat = self.goal.quat
 		self.goal_index = self.goal.ind
 		self.observ = False
-		self.n = 15
+		self.n = 30
 		self.action_confirmation_constant = 1
 		self.action_log_robot = [np.zeros(6)]*self.n
 		self.action_log_human = [np.ones(6) ]*self.n 
 		self.action_count = 0
+
+		self.action_weight = 0.6
+		self.user_norm = .05
 		
 	def joint2pose(self,q):
 		state = self.kdl_kin.forward(q)
@@ -75,33 +78,33 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		use = time.time()
 		self.position_after_action,self.pose_after_action = self.joint2pose(self.robot_state_after_action)    
 
-		self.dist_translation = np.linalg.norm(np.array(self.robot_state["x"][0:3]) - self.goal_pos)
+		self.dist_translation = np.linalg.norm(np.array(self.robot_state["x"][0:3]) - self.goal_pos[0:3])
 		self.dist_translation_aftertrans = np.linalg.norm(np.array(self.position_after_action) - self.goal_pos)
+		#print(self.dist_translation_aftertrans,self.dist_translation)
 
 		vec2goal = self.get_action()
 		vecnorm = np.linalg.norm(vec2goal)
 		if vecnorm<.001:
 			vecnorm =1
 		self.action_log_robot[self.action_count] = vec2goal / vecnorm
-		#print("USE IN CHECKIN",self.action_log_robot)
+
 		
-		if np.linalg.norm(self.user_action) < .05:
-			#print("SLOW")
-			#print(np.linalg.norm(self.user_action))
-			vec2goal = Robot_action
-			self.action_log_human[self.action_count] = vec2goal / vecnorm
+		if np.linalg.norm(self.user_action) < .0005:			
+			self.user_norm = .05
+			self.action_log_human[self.action_count] = Robot_action / (np.linalg.norm(Robot_action)+.01)
 		else:
-			self.action_log_human[self.action_count] = self.user_action / np.linalg.norm(self.user_action)
-			
+			self.action_log_human[self.action_count] = self.user_action / (np.linalg.norm(self.user_action)+.01)
+			self.user_norm = (np.linalg.norm(self.user_action)+.01)
 		diff = 0
 		for i in range(self.n):
 
 			diff += np.linalg.norm(self.action_log_human[i] - self.action_log_robot[i]) / self.n
-		self.action_confirmation_constant = diff    
+		self.action_confirmation_constant = diff*self.action_weight    
+		#if self.goal.name == "Spoon":
+			#print(self.base_Q(),self.get_qvalue(),self.get_value())
 		self.action_count +=1
 		if self.action_count == self.n:
 			self.action_count = 0
-			#print("TESTING --",self.goal.name,"---",self.action_confirmation_constant,self.get_qvalue_translation(),self.action_confirmation_constant+self.get_qvalue_translation())
 			
 		
 		#something about mode switch distance???
@@ -110,43 +113,44 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		if goal_pos == None:
 			goal_pos = self.goal_pos
 		q = self.robot_state["q"]
+		
 		#goal_euler= np.array(transmethods.euler_from_quaternion(self.goal_quat))
 		#goal_x = np.append(self.goal_pos,[0,0,0])
 		pose = self.kdl_kin.forward(q)
-		#print(pose)
+
 		pose[:3,3] = (np.reshape(goal_pos,(3,1))+pose[:3,3])/2
-		#print(pose)
+
 		goal_q = self.invkin(pose,q)
 		qdot =  (goal_q - q) 
 		if np.linalg.norm(qdot) > .001:
-			qdot *= .1/(np.linalg.norm(qdot))
-		#print("SHAPIN UP",np.shape(xdot))
+			qdot *= self.user_norm/(np.linalg.norm(qdot))
+	
 		#robot_qdot= self.xdot2qdot(xdot, self.robot_state["q"]) #qdot
-	 # print("SHAPIN UP",np.shape(robot_qdot[0,0:6]))
+
 		 #= .001*(robotq[:7] - current_q[:7])
 		return qdot
 	
-	def base_Q(self,q2a = 2):
-		if self.observ:
-			#print("WRONG")
+	def base_Q(self):
+		if not self.observ:
+
 			#return (self.get_qvalue_translation() + np.linalg.norm(self.user_action))
-			return (self.get_qvalue_translation())
+			return 0
 		else:
 			#
-			qval = self.get_qvalue_translation()
+			#qval = self.get_qvalue_translation()
 			
-			Total = qval + self.action_confirmation_constant 
+			#Total = self.action_confirmation_constant 
 	
-			return (qval + self.action_confirmation_constant )
+			return (self.action_confirmation_constant )
 	
 
 
 
 	def get_value(self):
-		return (self.get_value_translation() )*self.V_Change_Constant
+		return (self.get_value_translation() ) * .5
 
 	def get_qvalue(self):
-		return (self.get_qvalue_translation() )*self.Q_Change_Constant
+		return (self.get_qvalue_translation() )
 
 #   #parts split into translation and rotation
 	def get_value_translation(self, dist_translation=None):
@@ -168,7 +172,7 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 			return self.ACTION_APPLY_TIME * (self.TRANSLATION_QUADRATIC_COST_MULTPLIER * dist_translation + self.TRANSLATION_CONSTANT_ADD)
 
 	def get_qvalue_translation(self):
-		return self.get_cost_translation() + self.get_value_translation(self.dist_translation_aftertrans)
+		return  self.get_value_translation(self.dist_translation_aftertrans)
 
 	
 
@@ -225,8 +229,6 @@ class HuberAssistancePolicy(AssistancePolicyOneTarget.AssistancePolicyOneTarget)
 		self.ROTATION_DELTA_SWITCH = huber_rotation_delta_switch
 		self.ROTATION_CONSTANT_ADD = huber_rotation_constant_add
 		self.ROTATION_MULTIPLIER = huber_rotation_multiplier
-		self.V_Change_Constant = Change_Constant# Josh Addition, Slows Change moderation. Rerouted into Goal Predictor for goal bypass in redirection cases
-		self.Q_Change_Constant = Change_Constant#Josh Addition, 
 		if robot_translation_cost_multiplier:
 			self.ROBOT_TRANSLATION_COST_MULTIPLIER = robot_translation_cost_multiplier
 		if robot_rotation_cost_multiplier:

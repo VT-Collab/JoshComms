@@ -99,8 +99,8 @@ class SimpleEnv():
         #Salt Shaker
         self.salt = RBOObject("block")
         self.salt.load()
-        self.salt_position = [-0.38, 0.105, 0.25]
-        self.salt_poslist = [[-0.38, 0.105, 0.25]]
+        self.salt_position = [-0.7, 0.185, 0.25]
+        self.salt_poslist = [[-0.7, 0.185, 0.25]]
         self.salt_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -114,8 +114,8 @@ class SimpleEnv():
         #Salt Shaker
         self.pepper = RBOObject("block")
         self.pepper.load()
-        self.pepper_position = [-0.81, 0.06, 0.255]
-        self.pepper_poslist = [[-0.81, 0.06, 0.255]]
+        self.pepper_position = [-0.745, 0.05, 0.255]
+        self.pepper_poslist = [[-0.745, 0.05, 0.255]]
         self.pepper_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -146,8 +146,8 @@ class SimpleEnv():
         #Fork Spawn
         self.fork = RBOObject("block")
         self.fork.load()
-        self.fork_position = [-0.7, 0.155, 0.325]
-        self.fork_poslist = [[-0.7, 0.155, 0.325]]
+        self.fork_position = [-0.365, 0.26, 0.325]
+        self.fork_poslist = [[-0.365, 0.26, 0.325]]
         self.fork_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -161,8 +161,8 @@ class SimpleEnv():
         #Spoon Spawn
         self.spoon= RBOObject("block")
         self.spoon.load()
-        self.spoon_position = [-.475, 0.292, 0.325]
-        self.spoon_poslist = [[-0.475, 0.292, 0.325]]
+        self.spoon_position = [-.49, 0.282, 0.325]
+        self.spoon_poslist = [[-0.49, 0.282, 0.325]]
         self.spoon_quaternion = [1.0  ,       0.    ,     0., 0.]
         #assist pos / pose
         
@@ -253,8 +253,8 @@ class SimpleEnv():
         # load mug for pose correction task
         self.mug = YCBObject("025_mug")
         self.mug.load()
-        self.mug_position = [-0.5, 0.08, 0.25]
-        self.mug_poslist = [[-0.5, 0.08, 0.25]]
+        self.mug_position = [-0.6,-0.05, 0.275]
+        self.mug_poslist = [[-0.6,-0.05, 0.275]]
         self.mug_quaternion = [ 0.5, -0.5, 0.5, -0.5 ] #horizontal
         self.mug.set_position_orientation(self.mug_position, self.mug_quaternion)
         #Positions: Where the Fork is,Above the Center of the table, Below Prior, Back up
